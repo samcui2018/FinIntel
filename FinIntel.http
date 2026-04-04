@@ -1,0 +1,6 @@
+@FinIntel_HostAddress = http://localhost:5020
+
+GET {{FinIntel_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
