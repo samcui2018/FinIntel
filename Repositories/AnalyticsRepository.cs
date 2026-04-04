@@ -18,9 +18,6 @@ public class AnalyticsRepository : IAnalyticsRepository
         Guid userId,
         CancellationToken cancellationToken = default)
     {
-        // if (userId <= 0)
-        //     throw new ArgumentOutOfRangeException(nameof(userId));
-
         const string sql = """
             SELECT
                 u.LoadId,
@@ -30,8 +27,9 @@ public class AnalyticsRepository : IAnalyticsRepository
                 u.RowsInserted,
                 u.Status,
                 u.CreatedAt
-            FROM dbo.Uploads u join dbo.Businesses b
-                on u.BusinessId = b.BusinessId
+            FROM dbo.Uploads u
+            INNER JOIN dbo.Businesses b
+                ON u.BusinessId = b.BusinessId
             WHERE u.CreatedByUserId = @UserId
             ORDER BY u.CreatedAt DESC;
             """;
@@ -65,13 +63,13 @@ public class AnalyticsRepository : IAnalyticsRepository
         return results;
     }
 
-    public async Task<AnalyticsSummaryDto> GetSummaryAsync(
+    public async Task<AnalyticsSummaryDto> GetSpendSummaryAsync(
         Guid userId,
         Guid businessId,
         CancellationToken cancellationToken = default)
     {
-        // if (userId <= 0)
-        //     throw new ArgumentOutOfRangeException(nameof(userId));
+        if (userId == Guid.Empty)
+            throw new ArgumentOutOfRangeException(nameof(userId));
 
         if (businessId == Guid.Empty)
             throw new ArgumentException("businessId is required.", nameof(businessId));
@@ -79,25 +77,34 @@ public class AnalyticsRepository : IAnalyticsRepository
         const string sql = """
             SELECT
                 COUNT(*) AS TransactionCount,
-                ISNULL(SUM(t.Amount), 0) AS TotalAmount,
-                ISNULL(AVG(CAST(t.Amount AS decimal(18,2))), 0) AS AverageAmount,
+                ISNULL(SUM(CASE WHEN t.CountsAsSpend = 1 THEN t.AbsoluteAmount ELSE 0 END), 0) AS TotalAmount,
+                ISNULL(AVG(CAST(CASE WHEN t.CountsAsSpend = 1 THEN t.AbsoluteAmount END AS decimal(18,2))), 0) AS AverageAmount,
                 ISNULL(SUM(CASE
-                    WHEN YEAR(t.TransactionDate) = YEAR(GETDATE())
+                    WHEN t.CountsAsSpend = 1
+                     AND YEAR(t.TransactionDate) = YEAR(GETDATE())
                      AND MONTH(t.TransactionDate) = MONTH(GETDATE())
-                    THEN t.Amount
+                    THEN t.AbsoluteAmount
                     ELSE 0
                 END), 0) AS ThisMonthAmount,
                 (
-                    SELECT TOP 1 t2.MerchantName
+                    SELECT TOP 1
+                        COALESCE(
+                            NULLIF(LTRIM(RTRIM(t2.NormalizedMerchantName)), ''),
+                            NULLIF(LTRIM(RTRIM(t2.MerchantName)), ''),
+                            'Unknown'
+                        ) AS MerchantName
                     FROM dbo.Transactions t2
                     INNER JOIN dbo.Uploads u2
                         ON u2.LoadId = t2.LoadId
                     WHERE u2.CreatedByUserId = @UserId
                       AND u2.BusinessId = @BusinessId
-                      AND t2.MerchantName IS NOT NULL
-                      AND LTRIM(RTRIM(t2.MerchantName)) <> ''
-                    GROUP BY t2.MerchantName
-                    ORDER BY SUM(t2.Amount) DESC
+                      AND t2.CountsAsSpend = 1
+                    GROUP BY COALESCE(
+                        NULLIF(LTRIM(RTRIM(t2.NormalizedMerchantName)), ''),
+                        NULLIF(LTRIM(RTRIM(t2.MerchantName)), ''),
+                        'Unknown'
+                    )
+                    ORDER BY SUM(t2.AbsoluteAmount) DESC
                 ) AS TopMerchant,
                 (
                     SELECT MAX(u3.CreatedAt)
@@ -141,13 +148,13 @@ public class AnalyticsRepository : IAnalyticsRepository
         };
     }
 
-    public async Task<IReadOnlyList<MonthlyTrendPointResponse>> GetMonthlyTrendAsync(
+    public async Task<IReadOnlyList<MonthlyTrendPointResponse>> GetMonthlySpendTrendAsync(
         Guid userId,
         Guid businessId,
         CancellationToken cancellationToken = default)
     {
-        // if (userId <= 0)
-        //     throw new ArgumentOutOfRangeException(nameof(userId));
+        if (userId == Guid.Empty)
+            throw new ArgumentOutOfRangeException(nameof(userId));
 
         if (businessId == Guid.Empty)
             throw new ArgumentException("businessId is required.", nameof(businessId));
@@ -155,13 +162,14 @@ public class AnalyticsRepository : IAnalyticsRepository
         const string sql = """
             SELECT
                 CONVERT(char(7), t.TransactionDate, 120) AS [Month],
-                SUM(t.Amount) AS TotalAmount,
+                SUM(t.AbsoluteAmount) AS TotalAmount,
                 COUNT(*) AS TransactionCount
             FROM dbo.Transactions t
             INNER JOIN dbo.Uploads u
                 ON u.LoadId = t.LoadId
             WHERE u.CreatedByUserId = @UserId
               AND u.BusinessId = @BusinessId
+              AND t.CountsAsSpend = 1
             GROUP BY CONVERT(char(7), t.TransactionDate, 120)
             ORDER BY [Month];
             """;
@@ -190,15 +198,14 @@ public class AnalyticsRepository : IAnalyticsRepository
         return results;
     }
 
-    public async Task<IReadOnlyList<TopMerchantResponse>> GetTopMerchantsAsync(
+    public async Task<IReadOnlyList<TopMerchantResponse>> GetTopSpendMerchantsAsync(
         Guid userId,
         Guid businessId,
         int top,
         CancellationToken cancellationToken = default)
     {
         if (userId == Guid.Empty)
-             throw new ArgumentOutOfRangeException(nameof(userId));
-            //throw new ArgumentOutOfRangeException(nameof(userId));
+            throw new ArgumentOutOfRangeException(nameof(userId));
 
         if (businessId == Guid.Empty)
             throw new ArgumentException("businessId is required.", nameof(businessId));
@@ -208,26 +215,25 @@ public class AnalyticsRepository : IAnalyticsRepository
 
         const string sql = """
             SELECT TOP (@Top)
-                MerchantName =
-                    CASE
-                        WHEN t.MerchantName IS NULL OR LTRIM(RTRIM(t.MerchantName)) = ''
-                        THEN 'Unknown'
-                        ELSE t.MerchantName
-                    END,
-                SUM(t.Amount) AS TotalAmount,
+                MerchantName = COALESCE(
+                    NULLIF(LTRIM(RTRIM(t.NormalizedMerchantName)), ''),
+                    NULLIF(LTRIM(RTRIM(t.MerchantName)), ''),
+                    'Unknown'
+                ),
+                SUM(t.AbsoluteAmount) AS TotalAmount,
                 COUNT(*) AS TransactionCount
             FROM dbo.Transactions t
             INNER JOIN dbo.Uploads u
                 ON u.LoadId = t.LoadId
             WHERE u.CreatedByUserId = @UserId
               AND u.BusinessId = @BusinessId
-            GROUP BY
-                CASE
-                    WHEN t.MerchantName IS NULL OR LTRIM(RTRIM(t.MerchantName)) = ''
-                    THEN 'Unknown'
-                    ELSE t.MerchantName
-                END
-            ORDER BY SUM(t.Amount) DESC;
+              AND t.CountsAsSpend = 1
+            GROUP BY COALESCE(
+                NULLIF(LTRIM(RTRIM(t.NormalizedMerchantName)), ''),
+                NULLIF(LTRIM(RTRIM(t.MerchantName)), ''),
+                'Unknown'
+            )
+            ORDER BY SUM(t.AbsoluteAmount) DESC;
             """;
 
         var results = new List<TopMerchantResponse>();
@@ -260,16 +266,24 @@ public class AnalyticsRepository : IAnalyticsRepository
         int monthsBack,
         CancellationToken cancellationToken = default)
     {
+        if (businessId == Guid.Empty)
+            throw new ArgumentException("businessId is required.", nameof(businessId));
+
+        if (monthsBack <= 0)
+            throw new ArgumentOutOfRangeException(nameof(monthsBack));
+
         const string sql = """
-        SELECT
-            DATEFROMPARTS(YEAR(TransactionDate), MONTH(TransactionDate), 1) AS MonthStart,
-            SUM(Amount) AS Amount
-        FROM dbo.Transactions
-        WHERE BusinessId = @BusinessId
-          AND TransactionDate >= DATEADD(MONTH, -@MonthsBack, CAST(GETUTCDATE() AS date))
-        GROUP BY DATEFROMPARTS(YEAR(TransactionDate), MONTH(TransactionDate), 1)
-        ORDER BY MonthStart;
-        """;
+            SELECT
+                DATEFROMPARTS(YEAR(TransactionDate), MONTH(TransactionDate), 1) AS MonthStart,
+                SUM(AbsoluteAmount) AS Amount,
+                COUNT(*) AS TransactionCount
+            FROM dbo.Transactions
+            WHERE BusinessId = @BusinessId
+              AND CountsAsSpend = 1
+              AND TransactionDate >= DATEADD(MONTH, -@MonthsBack, CAST(GETUTCDATE() AS date))
+            GROUP BY DATEFROMPARTS(YEAR(TransactionDate), MONTH(TransactionDate), 1)
+            ORDER BY MonthStart;
+            """;
 
         var results = new List<MonthlySpendDto>();
 
@@ -277,8 +291,8 @@ public class AnalyticsRepository : IAnalyticsRepository
         await connection.OpenAsync(cancellationToken);
 
         await using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@BusinessId", businessId);
-        command.Parameters.AddWithValue("@MonthsBack", monthsBack);
+        command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
+        command.Parameters.Add(new SqlParameter("@MonthsBack", SqlDbType.Int) { Value = monthsBack });
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
@@ -286,8 +300,8 @@ public class AnalyticsRepository : IAnalyticsRepository
         {
             results.Add(new MonthlySpendDto
             {
-                MonthStart = reader.GetDateTime(0),
-                Amount = reader.GetDecimal(1)
+                MonthStart = reader.GetDateTime(reader.GetOrdinal("MonthStart")),
+                Amount = reader.GetDecimal(reader.GetOrdinal("Amount"))
             });
         }
 
@@ -300,16 +314,34 @@ public class AnalyticsRepository : IAnalyticsRepository
         int topN,
         CancellationToken cancellationToken = default)
     {
+        if (businessId == Guid.Empty)
+            throw new ArgumentException("businessId is required.", nameof(businessId));
+
+        if (monthsBack <= 0)
+            throw new ArgumentOutOfRangeException(nameof(monthsBack));
+
+        if (topN <= 0)
+            throw new ArgumentOutOfRangeException(nameof(topN));
+
         const string sql = """
-        SELECT TOP (@TopN)
-            COALESCE(NULLIF(LTRIM(RTRIM(NormalizedMerchantName)), ''), NULLIF(LTRIM(RTRIM(MerchantName)), ''), 'UNKNOWN') AS MerchantName,
-            SUM(Amount) AS Amount
-        FROM dbo.Transactions
-        WHERE BusinessId = @BusinessId
-          AND TransactionDate >= DATEADD(MONTH, -@MonthsBack, CAST(GETUTCDATE() AS date))
-        GROUP BY COALESCE(NULLIF(LTRIM(RTRIM(NormalizedMerchantName)), ''), NULLIF(LTRIM(RTRIM(MerchantName)), ''), 'UNKNOWN')
-        ORDER BY SUM(Amount) DESC;
-        """;
+            SELECT TOP (@TopN)
+                COALESCE(
+                    NULLIF(LTRIM(RTRIM(NormalizedMerchantName)), ''),
+                    NULLIF(LTRIM(RTRIM(MerchantName)), ''),
+                    'UNKNOWN'
+                ) AS MerchantName,
+                SUM(AbsoluteAmount) AS Amount
+            FROM dbo.Transactions
+            WHERE BusinessId = @BusinessId
+              AND CountsAsSpend = 1
+              AND TransactionDate >= DATEADD(MONTH, -@MonthsBack, CAST(GETUTCDATE() AS date))
+            GROUP BY COALESCE(
+                NULLIF(LTRIM(RTRIM(NormalizedMerchantName)), ''),
+                NULLIF(LTRIM(RTRIM(MerchantName)), ''),
+                'UNKNOWN'
+            )
+            ORDER BY SUM(AbsoluteAmount) DESC;
+            """;
 
         var results = new List<TopMerchantDto>();
 
@@ -317,9 +349,9 @@ public class AnalyticsRepository : IAnalyticsRepository
         await connection.OpenAsync(cancellationToken);
 
         await using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@BusinessId", businessId);
-        command.Parameters.AddWithValue("@MonthsBack", monthsBack);
-        command.Parameters.AddWithValue("@TopN", topN);
+        command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
+        command.Parameters.Add(new SqlParameter("@MonthsBack", SqlDbType.Int) { Value = monthsBack });
+        command.Parameters.Add(new SqlParameter("@TopN", SqlDbType.Int) { Value = topN });
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
@@ -327,8 +359,8 @@ public class AnalyticsRepository : IAnalyticsRepository
         {
             results.Add(new TopMerchantDto
             {
-                MerchantName = reader.GetString(0),
-                TotalAmount = reader.GetDecimal(1)
+                MerchantName = reader.GetString(reader.GetOrdinal("MerchantName")),
+                TotalAmount = reader.GetDecimal(reader.GetOrdinal("Amount"))
             });
         }
 
@@ -340,31 +372,38 @@ public class AnalyticsRepository : IAnalyticsRepository
         int monthsBack,
         CancellationToken cancellationToken = default)
     {
+        if (businessId == Guid.Empty)
+            throw new ArgumentException("businessId is required.", nameof(businessId));
+
+        if (monthsBack <= 0)
+            throw new ArgumentOutOfRangeException(nameof(monthsBack));
+
         const string sql = """
-        SELECT
-            DATEFROMPARTS(YEAR(TransactionDate), MONTH(TransactionDate), 1) AS MonthStart,
-            CASE
-                WHEN NormalizedMerchantName LIKE '%AMAZON%' THEN 'Retail'
-                WHEN NormalizedMerchantName LIKE '%UBER%' OR NormalizedMerchantName LIKE '%LYFT%' THEN 'Transportation'
-                WHEN NormalizedMerchantName LIKE '%STARBUCKS%' OR NormalizedMerchantName LIKE '%MCDONALD%' THEN 'Meals'
-                WHEN Description LIKE '%SUBSCRIPTION%' OR Description LIKE '%MONTHLY%' THEN 'Subscriptions'
-                ELSE 'Other'
-            END AS Category,
-            SUM(Amount) AS Amount
-        FROM dbo.Transactions
-        WHERE BusinessId = @BusinessId
-          AND TransactionDate >= DATEADD(MONTH, -@MonthsBack, CAST(GETUTCDATE() AS date))
-        GROUP BY
-            DATEFROMPARTS(YEAR(TransactionDate), MONTH(TransactionDate), 1),
-            CASE
-                WHEN NormalizedMerchantName LIKE '%AMAZON%' THEN 'Retail'
-                WHEN NormalizedMerchantName LIKE '%UBER%' OR NormalizedMerchantName LIKE '%LYFT%' THEN 'Transportation'
-                WHEN NormalizedMerchantName LIKE '%STARBUCKS%' OR NormalizedMerchantName LIKE '%MCDONALD%' THEN 'Meals'
-                WHEN Description LIKE '%SUBSCRIPTION%' OR Description LIKE '%MONTHLY%' THEN 'Subscriptions'
-                ELSE 'Other'
-            END
-        ORDER BY MonthStart, Category;
-        """;
+            SELECT
+                DATEFROMPARTS(YEAR(TransactionDate), MONTH(TransactionDate), 1) AS MonthStart,
+                CASE
+                    WHEN UPPER(ISNULL(NormalizedMerchantName, '')) LIKE '%AMAZON%' THEN 'Retail'
+                    WHEN UPPER(ISNULL(NormalizedMerchantName, '')) LIKE '%UBER%' OR UPPER(ISNULL(NormalizedMerchantName, '')) LIKE '%LYFT%' THEN 'Transportation'
+                    WHEN UPPER(ISNULL(NormalizedMerchantName, '')) LIKE '%STARBUCKS%' OR UPPER(ISNULL(NormalizedMerchantName, '')) LIKE '%MCDONALD%' THEN 'Meals'
+                    WHEN UPPER(ISNULL(Description, '')) LIKE '%SUBSCRIPTION%' OR UPPER(ISNULL(Description, '')) LIKE '%MONTHLY%' THEN 'Subscriptions'
+                    ELSE 'Other'
+                END AS Category,
+                SUM(AbsoluteAmount) AS Amount
+            FROM dbo.Transactions
+            WHERE BusinessId = @BusinessId
+              AND CountsAsSpend = 1
+              AND TransactionDate >= DATEADD(MONTH, -@MonthsBack, CAST(GETUTCDATE() AS date))
+            GROUP BY
+                DATEFROMPARTS(YEAR(TransactionDate), MONTH(TransactionDate), 1),
+                CASE
+                    WHEN UPPER(ISNULL(NormalizedMerchantName, '')) LIKE '%AMAZON%' THEN 'Retail'
+                    WHEN UPPER(ISNULL(NormalizedMerchantName, '')) LIKE '%UBER%' OR UPPER(ISNULL(NormalizedMerchantName, '')) LIKE '%LYFT%' THEN 'Transportation'
+                    WHEN UPPER(ISNULL(NormalizedMerchantName, '')) LIKE '%STARBUCKS%' OR UPPER(ISNULL(NormalizedMerchantName, '')) LIKE '%MCDONALD%' THEN 'Meals'
+                    WHEN UPPER(ISNULL(Description, '')) LIKE '%SUBSCRIPTION%' OR UPPER(ISNULL(Description, '')) LIKE '%MONTHLY%' THEN 'Subscriptions'
+                    ELSE 'Other'
+                END
+            ORDER BY MonthStart, Category;
+            """;
 
         var results = new List<CategorySpendDto>();
 
@@ -372,8 +411,8 @@ public class AnalyticsRepository : IAnalyticsRepository
         await connection.OpenAsync(cancellationToken);
 
         await using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@BusinessId", businessId);
-        command.Parameters.AddWithValue("@MonthsBack", monthsBack);
+        command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
+        command.Parameters.Add(new SqlParameter("@MonthsBack", SqlDbType.Int) { Value = monthsBack });
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
@@ -381,9 +420,9 @@ public class AnalyticsRepository : IAnalyticsRepository
         {
             results.Add(new CategorySpendDto
             {
-                MonthStart = reader.GetDateTime(0),
-                Category = reader.GetString(1),
-                TotalAmount = reader.GetDecimal(2)
+                MonthStart = reader.GetDateTime(reader.GetOrdinal("MonthStart")),
+                Category = reader.GetString(reader.GetOrdinal("Category")),
+                TotalAmount = reader.GetDecimal(reader.GetOrdinal("Amount"))
             });
         }
 
@@ -395,22 +434,37 @@ public class AnalyticsRepository : IAnalyticsRepository
         int monthsBack,
         CancellationToken cancellationToken = default)
     {
+        if (businessId == Guid.Empty)
+            throw new ArgumentException("businessId is required.", nameof(businessId));
+
+        if (monthsBack <= 0)
+            throw new ArgumentOutOfRangeException(nameof(monthsBack));
+
         const string sql = """
-        SELECT
-            COALESCE(NULLIF(LTRIM(RTRIM(NormalizedMerchantName)), ''), NULLIF(LTRIM(RTRIM(MerchantName)), ''), 'UNKNOWN') AS MerchantName,
-            CAST(TransactionDate AS date) AS TransactionDate,
-            Amount,
-            COUNT(*) AS DuplicateCount
-        FROM dbo.Transactions
-        WHERE BusinessId = @BusinessId
-          AND TransactionDate >= DATEADD(MONTH, -@MonthsBack, CAST(GETUTCDATE() AS date))
-        GROUP BY
-            COALESCE(NULLIF(LTRIM(RTRIM(NormalizedMerchantName)), ''), NULLIF(LTRIM(RTRIM(MerchantName)), ''), 'UNKNOWN'),
-            CAST(TransactionDate AS date),
-            Amount
-        HAVING COUNT(*) > 1
-        ORDER BY COUNT(*) DESC, Amount DESC;
-        """;
+            SELECT
+                COALESCE(
+                    NULLIF(LTRIM(RTRIM(NormalizedMerchantName)), ''),
+                    NULLIF(LTRIM(RTRIM(MerchantName)), ''),
+                    'UNKNOWN'
+                ) AS MerchantName,
+                CAST(TransactionDate AS date) AS TransactionDate,
+                AbsoluteAmount AS Amount,
+                COUNT(*) AS DuplicateCount
+            FROM dbo.Transactions
+            WHERE BusinessId = @BusinessId
+              AND CountsAsSpend = 1
+              AND TransactionDate >= DATEADD(MONTH, -@MonthsBack, CAST(GETUTCDATE() AS date))
+            GROUP BY
+                COALESCE(
+                    NULLIF(LTRIM(RTRIM(NormalizedMerchantName)), ''),
+                    NULLIF(LTRIM(RTRIM(MerchantName)), ''),
+                    'UNKNOWN'
+                ),
+                CAST(TransactionDate AS date),
+                AbsoluteAmount
+            HAVING COUNT(*) > 1
+            ORDER BY COUNT(*) DESC, AbsoluteAmount DESC;
+            """;
 
         var results = new List<DuplicateChargeDto>();
 
@@ -418,8 +472,8 @@ public class AnalyticsRepository : IAnalyticsRepository
         await connection.OpenAsync(cancellationToken);
 
         await using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@BusinessId", businessId);
-        command.Parameters.AddWithValue("@MonthsBack", monthsBack);
+        command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
+        command.Parameters.Add(new SqlParameter("@MonthsBack", SqlDbType.Int) { Value = monthsBack });
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
@@ -427,14 +481,13 @@ public class AnalyticsRepository : IAnalyticsRepository
         {
             results.Add(new DuplicateChargeDto
             {
-                MerchantName = reader.GetString(0),
-                TransactionDate = reader.GetDateTime(1),
-                Amount = reader.GetDecimal(2),
-                DuplicateCount = reader.GetInt32(3)
+                MerchantName = reader.GetString(reader.GetOrdinal("MerchantName")),
+                TransactionDate = reader.GetDateTime(reader.GetOrdinal("TransactionDate")),
+                Amount = reader.GetDecimal(reader.GetOrdinal("Amount")),
+                DuplicateCount = reader.GetInt32(reader.GetOrdinal("DuplicateCount"))
             });
         }
 
         return results;
     }
-
 }

@@ -27,10 +27,10 @@ public interface ITransactionRepository
         string? errorMessage = null,
         CancellationToken cancellationToken = default);
 
-    Task CreateAnalyticsJobAsync(
-        Guid loadId,
-        string businessId,
-        CancellationToken cancellationToken = default);
+    // Task CreateAnalyticsJobAsync(
+    //     Guid loadId,
+    //     string businessId,
+    //     CancellationToken cancellationToken = default);
 
     Task<(int IngestionDuplicates, int PossibleDuplicateCharges)> GetLoadDuplicateSummaryAsync(
         Guid loadId,

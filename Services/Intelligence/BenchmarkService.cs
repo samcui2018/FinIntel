@@ -19,7 +19,7 @@ public sealed class BenchmarkService : IBenchmarkService
         int monthsBack,
         CancellationToken cancellationToken = default)
     {
-        var summary = await _analyticsRepository.GetSummaryAsync(
+        var summary = await _analyticsRepository.GetSpendSummaryAsync(
             loadId,
             businessId,
             cancellationToken);

@@ -21,20 +21,20 @@ public class AnalyticsService : IAnalyticsService
         Guid userId,
         Guid businessId,
         CancellationToken cancellationToken = default) =>
-        _analyticsRepository.GetSummaryAsync(userId, businessId, cancellationToken);
+        _analyticsRepository.GetSpendSummaryAsync(userId, businessId, cancellationToken);
 
     public Task<IReadOnlyList<MonthlyTrendPointResponse>> GetMonthlyTrendAsync(
         Guid userId,
         Guid businessId,
         CancellationToken cancellationToken = default) =>
-        _analyticsRepository.GetMonthlyTrendAsync(userId, businessId, cancellationToken);
+        _analyticsRepository.GetMonthlySpendTrendAsync(userId, businessId, cancellationToken);
 
     public Task<IReadOnlyList<TopMerchantResponse>> GetTopMerchantsAsync(
         Guid userId,
         Guid businessId,
         int top,
         CancellationToken cancellationToken = default) =>
-        _analyticsRepository.GetTopMerchantsAsync(userId, businessId, top, cancellationToken);
+        _analyticsRepository.GetTopSpendMerchantsAsync(userId, businessId, top, cancellationToken);
 
     public Task<IReadOnlyList<UploadHistoryItemResponse>> GetUploadHistoryAsync(
         Guid userId,

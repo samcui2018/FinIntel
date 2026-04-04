@@ -106,7 +106,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 //builder.Services.AddScoped<CsvSourceAdapter>();
-builder.Services.AddScoped<IngestionService>();
+//builder.Services.AddScoped<IngestionService>();
 
 var app = builder.Build();
 

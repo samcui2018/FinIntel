@@ -61,26 +61,6 @@ public class InsightRepository : IInsightRepository
     {
         await using var connection = new SqlConnection(_connectionString);
 
-        // var sql = """
-        //     SELECT
-        //        distinct
-        //         --LoadId,
-        //         BusinessId,
-        //         InsightType,
-        //         Severity,
-        //         Title,
-        //         Description,
-        //         ImpactLabel,
-        //         ImpactValue,
-        //         Recommendation,
-        //         ConfidenceScore
-        //     FROM dbo.Insights
-        //     WHERE BusinessId = @BusinessId
-        //     --ORDER BY CreatedAtUtc DESC
-        //     """;
-
-        // var results = await connection.QueryAsync<InsightRecord>(
-        //     new CommandDefinition(sql, new { BusinessId = businessId }, cancellationToken: cancellationToken));
          var results = await connection.QueryAsync<InsightRecord>(
             new CommandDefinition(
                 "spInsightsGetByBusinessId",              // stored procedure name

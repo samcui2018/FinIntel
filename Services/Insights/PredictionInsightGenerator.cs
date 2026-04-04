@@ -17,7 +17,7 @@ public sealed class PredictionInsightGenerator : IInsightGenerator
         Guid businessId,
         CancellationToken cancellationToken = default)
     {
-        Console.WriteLine($"predictionGenerator called for businessId: {businessId}");
+        // // Console.WriteLine($"predictionGenerator called for businessId: {businessId}");
         var forecast = await _predictionService.ForecastMonthlySpendAsync(
             businessId,
             monthsBack: 6,

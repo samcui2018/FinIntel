@@ -17,7 +17,7 @@ public sealed class BenchmarkInsightGenerator : IInsightGenerator
         Guid businessId,
         CancellationToken cancellationToken = default)
     {
-        Console.WriteLine($"benchmarkGenerator called for businessId: {businessId}");
+        // Console.WriteLine($"benchmarkGenerator called for businessId: {businessId}");
         var benchmark = await _benchmarkService.CompareAsync(
             loadId,
             businessId,
