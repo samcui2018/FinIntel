@@ -117,3 +117,10 @@ docker-compose.override.yml
 *.seed
 *.pid.lockbin/
 obj/
+bin/
+obj/
+node_modules/
+dist/
+.env
+.env.*
+appsettings.Development.json
