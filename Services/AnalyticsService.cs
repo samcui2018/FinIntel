@@ -3,6 +3,7 @@ using FinancialIntelligence.Api.Dtos.Analytics;
 using FinancialIntelligence.Api.Repositories;
 using FinancialIntelligence.Api.Models;
 using FinancialIntelligence.Api.Services.Insights;
+using FinancialIntelligence.Api.Services.Intelligence;
 
 namespace FinancialIntelligence.Api.Services;
 
@@ -10,12 +11,22 @@ public class AnalyticsService : IAnalyticsService
 {
     private readonly IAnalyticsRepository _analyticsRepository;
     private readonly IInsightRanker _insightRanker;
+    private readonly IInterchangeOptimizationService _interchangeOptimizationService;
 
-    public AnalyticsService(IAnalyticsRepository analyticsRepository, IInsightRanker insightRanker)
+   public AnalyticsService(
+        IAnalyticsRepository analyticsRepository,
+        IInterchangeOptimizationService interchangeOptimizationService,
+        IInsightRanker insightRanker)
     {
         _analyticsRepository = analyticsRepository;
+        _interchangeOptimizationService = interchangeOptimizationService;
         _insightRanker = insightRanker;
-    }
+    } 
+    // public AnalyticsService(IAnalyticsRepository analyticsRepository, IInsightRanker insightRanker)
+    // {
+    //     _analyticsRepository = analyticsRepository;
+    //     _insightRanker = insightRanker;
+    // }
 
     public Task<AnalyticsSummaryDto> GetSummaryAsync(
         Guid userId,
@@ -49,8 +60,9 @@ public class AnalyticsService : IAnalyticsService
     var topMerchantTask = _analyticsRepository.GetTopMerchantSpendAsync(businessId, monthsBack, 10, cancellationToken);
     var monthlyCategoryTask = _analyticsRepository.GetMonthlyCategorySpendAsync(businessId, monthsBack, cancellationToken);
     var duplicateTask = _analyticsRepository.GetPossibleDuplicateChargesAsync(businessId, monthsBack, cancellationToken);
+    var interchangeTask = _interchangeOptimizationService.AnalyzeAsync(businessId, monthsBack, cancellationToken);
 
-    await Task.WhenAll(monthlySpendTask, topMerchantTask, monthlyCategoryTask, duplicateTask);
+    await Task.WhenAll(monthlySpendTask, topMerchantTask, monthlyCategoryTask, duplicateTask, interchangeTask);
 
     var candidates = new List<InsightDto>();
 
@@ -58,6 +70,7 @@ public class AnalyticsService : IAnalyticsService
     candidates.AddRange(BuildVendorConcentrationInsights(businessId, topMerchantTask.Result));
     candidates.AddRange(BuildCategorySpikeInsights(businessId, monthlyCategoryTask.Result));
     candidates.AddRange(BuildDuplicateChargeInsights(businessId, duplicateTask.Result)); 
+    candidates.AddRange(interchangeTask.Result);
 
     var insightRecords = candidates
     .Select(MapToInsightRecord)

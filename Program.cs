@@ -99,6 +99,9 @@ builder.Services.AddScoped<RuleBasedExecutiveSummaryService>();
 builder.Services.AddScoped<IExecutiveSummaryService, RuleBasedExecutiveSummaryService>();
 builder.Services.AddScoped<IExecutiveSummaryService, AiExecutiveSummaryService>();
 
+builder.Services.AddScoped<IInterchangeOptimizationRepository, InterchangeOptimizationRepository>();
+builder.Services.AddScoped<IInterchangeOptimizationService, InterchangeOptimizationService>();
+
 builder.Services.AddScoped<IInsightRanker, InsightRanker>();
 
 builder.Services.AddControllers();

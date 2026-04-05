@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FinIntel")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8dd71bdcc4e7abb3176b366b647fc47c4dd03fe0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4786c589039812b612b0b752a849af7b8d3dff99")]
 [assembly: System.Reflection.AssemblyProductAttribute("FinIntel")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FinIntel")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
