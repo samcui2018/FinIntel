@@ -3,6 +3,7 @@ using FinancialIntelligence.Api.Dtos.Analytics;
 using FinancialIntelligence.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using FinancialIntelligence.Api.Services.Intelligence;
 
 namespace FinancialIntelligence.Api.Controllers;
 [ApiController]
@@ -12,13 +13,16 @@ public sealed class AnalyticsController : ControllerBase
 {
     private readonly IBusinessService _businessService;
     private readonly IAnalyticsService _analyticsService;
+    private readonly IInsightService _insightService;
 
     public AnalyticsController(
         IBusinessService businessService,
-        IAnalyticsService analyticsService)
+        IAnalyticsService analyticsService,
+        IInsightService insightService)
     {
         _businessService = businessService;
         _analyticsService = analyticsService;
+        _insightService = insightService;
     }
 
     [HttpGet("summary")]
@@ -96,10 +100,10 @@ public sealed class AnalyticsController : ControllerBase
         var result = await _analyticsService.GetUploadHistoryAsync(userId, cancellationToken);
         return Ok(result);
     }
-     [HttpGet("top-insights")]
+    [HttpGet("top-insights")]
     public async Task<ActionResult<TopInsightsResponse>> GetTopInsights(
         Guid businessId,
-        int monthsBack = 6,
+        [FromQuery] int monthsBack = 6,
         CancellationToken cancellationToken = default)
     {
         if (businessId == Guid.Empty)
@@ -108,12 +112,18 @@ public sealed class AnalyticsController : ControllerBase
         if (monthsBack < 2 || monthsBack > 24)
             return BadRequest("monthsBack must be between 2 and 24.");
 
-        var result = await _analyticsService.GetTopInsightsAsync(
+        var insights = await _insightService.GetInsightsAsync(
             businessId,
             monthsBack,
             cancellationToken);
 
-        return Ok(result);
+        return Ok(new TopInsightsResponse
+        {
+            BusinessId = businessId,
+            GeneratedAtUtc = DateTime.UtcNow,
+            LookbackMonths = monthsBack,
+            Insights = insights
+        });
     }
     private bool TryGetUserId(out Guid userId)
     {

@@ -4,7 +4,7 @@ using FinancialIntelligence.Api.Repositories;
 
 namespace FinancialIntelligence.Api.Services.Intelligence;
 
-public sealed class InterchangeOptimizationService : IInterchangeOptimizationService
+public sealed class InterchangeOptimizationService : IInsightContributor
 {
     private const decimal EcommerceOptimizationRateDelta = 0.0035m;
     private const decimal Level2Level3RateDelta = 0.0065m;

@@ -11,22 +11,17 @@ public class AnalyticsService : IAnalyticsService
 {
     private readonly IAnalyticsRepository _analyticsRepository;
     private readonly IInsightRanker _insightRanker;
-    private readonly IInterchangeOptimizationService _interchangeOptimizationService;
+    private readonly IInsightContributor _interchangeOptimizationService;
 
    public AnalyticsService(
         IAnalyticsRepository analyticsRepository,
-        IInterchangeOptimizationService interchangeOptimizationService,
+        IInsightContributor interchangeOptimizationService,
         IInsightRanker insightRanker)
     {
         _analyticsRepository = analyticsRepository;
         _interchangeOptimizationService = interchangeOptimizationService;
         _insightRanker = insightRanker;
     } 
-    // public AnalyticsService(IAnalyticsRepository analyticsRepository, IInsightRanker insightRanker)
-    // {
-    //     _analyticsRepository = analyticsRepository;
-    //     _insightRanker = insightRanker;
-    // }
 
     public Task<AnalyticsSummaryDto> GetSummaryAsync(
         Guid userId,

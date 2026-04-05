@@ -100,9 +100,13 @@ builder.Services.AddScoped<IExecutiveSummaryService, RuleBasedExecutiveSummarySe
 builder.Services.AddScoped<IExecutiveSummaryService, AiExecutiveSummaryService>();
 
 builder.Services.AddScoped<IInterchangeOptimizationRepository, InterchangeOptimizationRepository>();
-builder.Services.AddScoped<IInterchangeOptimizationService, InterchangeOptimizationService>();
+builder.Services.AddScoped<IInsightContributor, InterchangeOptimizationService>();
 
 builder.Services.AddScoped<IInsightRanker, InsightRanker>();
+
+builder.Services.AddScoped<IInsightService, InsightService>();
+builder.Services.AddScoped<IInsightContributor, SpendAnomalyInsightService>();
+
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
