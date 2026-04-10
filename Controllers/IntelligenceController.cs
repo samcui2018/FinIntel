@@ -1,5 +1,5 @@
 using FinancialIntelligence.Api.Dtos.Intelligence;
-using FinancialIntelligence.Api.Services.Intelligence;
+using FinancialIntelligence.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

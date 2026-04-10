@@ -2,7 +2,7 @@ using Dapper;
 using FinancialIntelligence.Api.Models;
 using Microsoft.Data.SqlClient;
 
-namespace FinancialIntelligence.Api.Services.Insights;
+namespace FinancialIntelligence.Api.Services;
 
 public class DuplicateChargeInsightGenerator : IInsightGenerator
 {
@@ -38,15 +38,17 @@ public class DuplicateChargeInsightGenerator : IInsightGenerator
                 HAVING COUNT(*) > 1
             )
             SELECT
+                MerchantName,
                 COUNT(*) AS DuplicateGroups,
                 SUM(Cnt) AS DuplicateTransactions
-            FROM PotentialDuplicates
+            FROM PotentialDuplicates group by MerchantName
             """;
 
         var row = await connection.QueryFirstOrDefaultAsync(sql, new { BusinessId = businessId });
 
         int groups = row?.DuplicateGroups ?? 0;
         int txns = row?.DuplicateTransactions ?? 0;
+        var merchantName = row?.MerchantName ?? "Unknown";
 
         if (groups == 0)
             return Array.Empty<InsightRecord>();
@@ -63,8 +65,10 @@ public class DuplicateChargeInsightGenerator : IInsightGenerator
             InsightType = "duplicate_charge_risk",
             Severity = severity,
             Title = "Potential duplicate charges detected",
-            Description = $"{groups} duplicate transaction group(s) were identified across {txns} transactions.",
-            ImpactLabel = $"{groups} duplicate groups",
+            Description = $"{groups} duplicate transaction group(s) were identified for merchant '{merchantName}' across {txns} transactions.",
+            ImpactLabel = $"{groups} duplicate groups", 
+            // Description = $"{groups} duplicate transaction group(s) were identified across {txns} transactions.",
+            // ImpactLabel = $"{groups} duplicate groups",
             ImpactValue = groups,
             Recommendation = "Review these transactions for duplicate processing, subscription overlap, or billing errors.",
             CreatedAtUtc = DateTime.UtcNow

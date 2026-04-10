@@ -1,14 +1,14 @@
 using FinancialIntelligence.Api.Dtos.Analytics;
-using FinancialIntelligence.Api.Services.Insights;  
-namespace FinancialIntelligence.Api.Services.Intelligence;
+
+namespace FinancialIntelligence.Api.Services;
 
 public sealed class InsightService : IInsightService
 {
-    private readonly IEnumerable<IInsightContributor> _contributors;
+    private readonly IEnumerable<IInsightAnalyzer> _contributors;
     private readonly IInsightRanker _ranker;
 
     public InsightService(
-        IEnumerable<IInsightContributor> contributors,
+        IEnumerable<IInsightAnalyzer> contributors,
         IInsightRanker ranker)
     {
         _contributors = contributors;

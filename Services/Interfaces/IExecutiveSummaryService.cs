@@ -1,7 +1,7 @@
 using FinancialIntelligence.Api.Dtos.Analytics;
 using FinancialIntelligence.Api.Dtos.Intelligence;
 
-namespace FinancialIntelligence.Api.Services.Intelligence;
+namespace FinancialIntelligence.Api.Services;
 
 public interface IExecutiveSummaryService
 {

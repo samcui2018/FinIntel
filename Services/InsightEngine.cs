@@ -1,8 +1,7 @@
 using FinancialIntelligence.Api.Models;
 using FinancialIntelligence.Api.Repositories;
 
-namespace FinancialIntelligence.Api.Services.Insights;
-
+namespace FinancialIntelligence.Api.Services;
 public class InsightEngine : IInsightEngine
 {
     private readonly IEnumerable<IInsightGenerator> _generators;

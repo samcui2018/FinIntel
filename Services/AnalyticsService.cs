@@ -2,8 +2,6 @@ using System.Text.Json;
 using FinancialIntelligence.Api.Dtos.Analytics;
 using FinancialIntelligence.Api.Repositories;
 using FinancialIntelligence.Api.Models;
-using FinancialIntelligence.Api.Services.Insights;
-using FinancialIntelligence.Api.Services.Intelligence;
 
 namespace FinancialIntelligence.Api.Services;
 
@@ -11,11 +9,11 @@ public class AnalyticsService : IAnalyticsService
 {
     private readonly IAnalyticsRepository _analyticsRepository;
     private readonly IInsightRanker _insightRanker;
-    private readonly IInsightContributor _interchangeOptimizationService;
+    private readonly IInsightAnalyzer _interchangeOptimizationService;
 
    public AnalyticsService(
         IAnalyticsRepository analyticsRepository,
-        IInsightContributor interchangeOptimizationService,
+        IInsightAnalyzer interchangeOptimizationService,
         IInsightRanker insightRanker)
     {
         _analyticsRepository = analyticsRepository;
@@ -50,42 +48,49 @@ public class AnalyticsService : IAnalyticsService
     Guid businessId,
     int monthsBack,
     CancellationToken cancellationToken = default)
-{
-    var monthlySpendTask = _analyticsRepository.GetMonthlySpendAsync(businessId, monthsBack, cancellationToken);
-    var topMerchantTask = _analyticsRepository.GetTopMerchantSpendAsync(businessId, monthsBack, 10, cancellationToken);
-    var monthlyCategoryTask = _analyticsRepository.GetMonthlyCategorySpendAsync(businessId, monthsBack, cancellationToken);
-    var duplicateTask = _analyticsRepository.GetPossibleDuplicateChargesAsync(businessId, monthsBack, cancellationToken);
-    var interchangeTask = _interchangeOptimizationService.AnalyzeAsync(businessId, monthsBack, cancellationToken);
+    {
+        var monthlySpendTask = _analyticsRepository.GetMonthlySpendAsync(businessId, monthsBack, cancellationToken);
+        var topMerchantTask = _analyticsRepository.GetTopMerchantSpendAsync(businessId, monthsBack, 10, cancellationToken);
+        var monthlyCategoryTask = _analyticsRepository.GetMonthlyCategorySpendAsync(businessId, monthsBack, cancellationToken);
+        var duplicateTask = _analyticsRepository.GetPossibleDuplicateChargesAsync(businessId, monthsBack, cancellationToken);
+        var interchangeTask = _interchangeOptimizationService.AnalyzeAsync(businessId, monthsBack, cancellationToken);
 
-    await Task.WhenAll(monthlySpendTask, topMerchantTask, monthlyCategoryTask, duplicateTask, interchangeTask);
+        await Task.WhenAll(monthlySpendTask, topMerchantTask, monthlyCategoryTask, duplicateTask, interchangeTask);
 
-    var candidates = new List<InsightDto>();
+        var candidates = new List<InsightDto>();
 
-    candidates.AddRange(BuildMonthlyTrendInsights(businessId, monthlySpendTask.Result));
-    candidates.AddRange(BuildVendorConcentrationInsights(businessId, topMerchantTask.Result));
-    candidates.AddRange(BuildCategorySpikeInsights(businessId, monthlyCategoryTask.Result));
-    candidates.AddRange(BuildDuplicateChargeInsights(businessId, duplicateTask.Result)); 
-    candidates.AddRange(interchangeTask.Result);
+        candidates.AddRange(BuildMonthlyTrendInsights(businessId, monthlySpendTask.Result));
+        candidates.AddRange(BuildVendorConcentrationInsights(businessId, topMerchantTask.Result));
+        candidates.AddRange(BuildCategorySpikeInsights(businessId, monthlyCategoryTask.Result));
+        candidates.AddRange(BuildDuplicateChargeInsights(businessId, duplicateTask.Result)); 
+        candidates.AddRange(interchangeTask.Result);
 
-    var insightRecords = candidates
-    .Select(MapToInsightRecord)
-    .ToList();
+        // New: spend anomaly with visualization
+        // var spendAnomalyInsight = TryBuildSpendAnomalyInsight(monthlySpendTask.Result);
+        // if (spendAnomalyInsight is not null)
+        // {
+        //     candidates.Add(spendAnomalyInsight);
+        // }
 
-    var ranked = _insightRanker.Rank(insightRecords);
-
-    var top5 = ranked
-        .Take(5)
-        .Select(MapToDto)
+        var insightRecords = candidates
+        .Select(MapToInsightRecord)
         .ToList();
 
-    return new TopInsightsResponse
-    {
-        BusinessId = businessId,
-        GeneratedAtUtc = DateTime.UtcNow,
-        LookbackMonths = monthsBack,
-        Insights = top5
-    };
-}
+        var ranked = _insightRanker.Rank(insightRecords);
+
+        var top5 = ranked
+            .Take(5)
+            .Select(MapToDto)
+            .ToList();
+
+        return new TopInsightsResponse
+        {
+            BusinessId = businessId,
+            GeneratedAtUtc = DateTime.UtcNow,
+            LookbackMonths = monthsBack,
+            Insights = top5
+        };
+    }
 
     private static IReadOnlyList<InsightDto> BuildMonthlyTrendInsights(
     Guid businessId,
@@ -334,4 +339,74 @@ public class AnalyticsService : IAnalyticsService
             Score = (decimal)ranked.PriorityScore
         };
     }
+    // private static InsightDto? TryBuildSpendAnomalyInsight(
+    // IReadOnlyList<MonthlySpendDto> monthlySpend)
+    // {
+    //     if (monthlySpend is null || monthlySpend.Count < 4)
+    //     {
+    //         return null;
+    //     }
+
+    //     var ordered = monthlySpend
+    //         .OrderBy(x => x.MonthStart)
+    //         .ToList();
+
+    //     var avg = ordered.Average(x => x.Amount);
+    //     if (avg <= 0)
+    //     {
+    //         return null;
+    //     }
+
+    //     var latest = ordered[^1];
+    //     var pctAboveAverage = ((latest.Amount - avg) / avg) * 100m;
+
+    //     // if (pctAboveAverage < 25m)
+    //     // {
+    //     //     return null;
+    //     // }
+
+    //     var estimatedImpact = latest.Amount - avg;
+
+    //     return BuildSpendAnomalyInsight(
+    //         monthlySpend: ordered,
+    //         anomalyMonth: latest,
+    //         estimatedImpact: Math.Round(estimatedImpact, 2),
+    //         score: pctAboveAverage >= 50m ? 90m : 78m);
+    // }
+    // // inside AnalyticsService or SpendAnomalyInsightService
+    // private static InsightDto BuildSpendAnomalyInsight(
+    //     IReadOnlyList<MonthlySpendDto> monthlySpend,
+    //     MonthlySpendDto anomalyMonth,
+    //     decimal estimatedImpact,
+    //     decimal score = 88m)
+    // {
+    //     var ordered = monthlySpend
+    //         .OrderBy(x => x.MonthStart)
+    //         .ToList();
+
+    //     var labels = ordered.Select(x => x.MonthStart.ToString("yyyy-MM")).ToList();
+    //     var spendValues = ordered.Select(x => x.Amount).ToList();
+
+    //     var highlightIndex = ordered.FindIndex(x => x.MonthStart == anomalyMonth.MonthStart);
+
+    //     return new InsightDto
+    //     {
+    //         Type = "SpendAnomaly",
+    //         Title = "Unusual spending spike detected",
+    //         Description = $"Spending in {anomalyMonth.MonthStart:yyyy-MM} was unusually high compared with the recent pattern.",
+    //         Severity = estimatedImpact >= 1000m ? "High" : "Medium",
+    //         Score = score,
+    //         EstimatedImpact = estimatedImpact,
+    //         VisualizationType = "line",
+    //         Visualization = InsightVisualizationFactory.CreateLineChart(
+    //             title: "Monthly spend trend",
+    //             labels: labels,
+    //             highlightIndexes: highlightIndex >= 0 ? new[] { highlightIndex } : Array.Empty<int>(),
+    //             new InsightVisualizationSeriesDto
+    //             {
+    //                 Name = "Spend",
+    //                 Values = spendValues
+    //             })
+    //     };
+    // }
 }

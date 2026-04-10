@@ -1,10 +1,10 @@
 using FinancialIntelligence.Api.Dtos.Analytics;
 
-namespace FinancialIntelligence.Api.Services.Intelligence;
+namespace FinancialIntelligence.Api.Services;
 
-public interface IInsightService
+public interface ISpendAnomalyInsightService
 {
-    Task<IReadOnlyList<InsightDto>> GetInsightsAsync(
+    Task<IReadOnlyList<InsightDto>> AnalyzeAsync(
         Guid businessId,
         int monthsBack,
         CancellationToken cancellationToken = default);

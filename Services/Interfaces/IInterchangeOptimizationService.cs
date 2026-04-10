@@ -1,8 +1,8 @@
 using FinancialIntelligence.Api.Dtos.Analytics;
 
-namespace FinancialIntelligence.Api.Services.Intelligence;
+namespace FinancialIntelligence.Api.Services;
 
-public interface ISpendAnomalyInsightService
+public interface IInterchangeOptimizationService
 {
     Task<IReadOnlyList<InsightDto>> AnalyzeAsync(
         Guid businessId,

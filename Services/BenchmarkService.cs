@@ -2,7 +2,7 @@ using FinancialIntelligence.Api.Dtos.Intelligence;
 using FinancialIntelligence.Api.Models;
 using FinancialIntelligence.Api.Repositories;
 
-namespace FinancialIntelligence.Api.Services.Intelligence;
+namespace FinancialIntelligence.Api.Services;
 
 public sealed class BenchmarkService : IBenchmarkService
 {

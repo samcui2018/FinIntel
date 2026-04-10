@@ -2,7 +2,7 @@ using Dapper;
 using FinancialIntelligence.Api.Models;
 using Microsoft.Data.SqlClient;
 
-namespace FinancialIntelligence.Api.Services.Insights;
+namespace FinancialIntelligence.Api.Services;
 
 public class ConcentrationRiskInsightGenerator : IInsightGenerator
 {
@@ -29,6 +29,7 @@ public class ConcentrationRiskInsightGenerator : IInsightGenerator
                     SUM(ABS(Amount)) AS TotalAmount
                 FROM dbo.Transactions
                 WHERE BusinessId = @BusinessId
+                and TransactionClass not IN (5) -- exclude payments
                 GROUP BY ISNULL(NULLIF(LTRIM(RTRIM(MerchantName)), ''), 'Unknown')
             )
             SELECT TOP 1

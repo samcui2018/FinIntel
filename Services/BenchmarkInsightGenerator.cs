@@ -1,7 +1,6 @@
 using FinancialIntelligence.Api.Models;
-using FinancialIntelligence.Api.Services.Intelligence;
 
-namespace FinancialIntelligence.Api.Services.Insights;
+namespace FinancialIntelligence.Api.Services;
 
 public sealed class BenchmarkInsightGenerator : IInsightGenerator
 {

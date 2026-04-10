@@ -280,7 +280,7 @@ public class AnalyticsRepository : IAnalyticsRepository
             FROM dbo.Transactions
             WHERE BusinessId = @BusinessId
               AND CountsAsSpend = 1
-              AND TransactionDate >= DATEADD(MONTH, -@MonthsBack, CAST(GETUTCDATE() AS date))
+             -- AND TransactionDate >= DATEADD(MONTH, -@MonthsBack, CAST(GETUTCDATE() AS date))
             GROUP BY DATEFROMPARTS(YEAR(TransactionDate), MONTH(TransactionDate), 1)
             ORDER BY MonthStart;
             """;

@@ -3,7 +3,7 @@ using FinancialIntelligence.Api.Dtos.Analytics;
 using FinancialIntelligence.Api.Dtos.Intelligence;
 using FinancialIntelligence.Api.Repositories;
 
-namespace FinancialIntelligence.Api.Services.Intelligence;
+namespace FinancialIntelligence.Api.Services;
 
 public sealed class IntelligenceService : IIntelligenceService
 {

@@ -1,8 +1,7 @@
 using FinancialIntelligence.Api.Repositories;
 using FinancialIntelligence.Api.Models;
-using FinancialIntelligence.Api.Services.Insights;
 
-namespace FinancialIntelligence.Api.Services.Insights;
+namespace FinancialIntelligence.Api.Services;
 public sealed class CashFlowForecastInsightGenerator : IInsightGenerator
 {
     private readonly ITransactionQueryRepository _transactionRepository;

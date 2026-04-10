@@ -1,6 +1,6 @@
 using FinancialIntelligence.Api.Dtos.Analytics;
-
-public interface IInsightContributor
+namespace FinancialIntelligence.Api.Services;
+public interface IInsightAnalyzer
 {
     Task<IReadOnlyList<InsightDto>> AnalyzeAsync(
         Guid businessId,

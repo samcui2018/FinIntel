@@ -60,31 +60,32 @@ builder.Services.AddHttpClient<IGenerativeAiClient, OpenAiClient>()
         c.Timeout = TimeSpan.FromSeconds(15);
     });
 
-builder.Services.AddScoped<IAuthRepository, AuthRepository>();
-builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
-builder.Services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
+//services
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
-//builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
-builder.Services.AddScoped<ITransactionUploadService, TransactionUploadService>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<ICsvSourceAdapter, CsvSourceAdapter>();
-builder.Services.AddScoped<IBusinessAccessRepository, BusinessAccessRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IBenchmarkService, BenchmarkService>();
+builder.Services.AddScoped<IBusinessService, BusinessService>();
+builder.Services.AddScoped<ICsvSourceAdapter, CsvSourceAdapter>();
+builder.Services.AddScoped<IExecutiveSummaryService, RuleBasedExecutiveSummaryService>();
+builder.Services.AddScoped<IExecutiveSummaryService, AiExecutiveSummaryService>();
+builder.Services.AddScoped<IInsightAnalyzer, InterchangeOptimizationService>();
+builder.Services.AddScoped<IInsightRanker, InsightRanker>();
+builder.Services.AddScoped<IInsightService, InsightService>();
+builder.Services.AddScoped<IInsightAnalyzer, SpendAnomalyInsightService>();
+builder.Services.AddScoped<IIntelligenceService, IntelligenceService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
-builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+builder.Services.AddScoped<IPredictionService, PredictionService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<ITransactionUploadService, TransactionUploadService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
-builder.Services.AddScoped<IBusinessService, BusinessService>();
-builder.Services.AddScoped<ITransactionQueryRepository, TransactionQueryRepository>();
+builder.Services.AddScoped<RuleBasedExecutiveSummaryService>();
 
-builder.Services.AddScoped<IInsightRepository, InsightRepository>();
+// Insight generators
 builder.Services.AddScoped<IInsightEngine, InsightEngine>();
-
 builder.Services.AddScoped<IInsightGenerator, ConcentrationRiskInsightGenerator>();
 builder.Services.AddScoped<IInsightGenerator, DuplicateChargeInsightGenerator>();
-builder.Services.AddScoped<IInsightGenerator, SpendAnomalyInsightGenerator>();
+builder.Services.AddScoped<IInsightGenerator, TransactionVolumeAnomalyInsightGenerator>();
 builder.Services.AddScoped<IInsightGenerator, RecurringSpendInsightGenerator>();
 builder.Services.AddScoped<IInsightGenerator, InterchangeOptimizationInsightGenerator>();
 builder.Services.AddScoped<IInsightGenerator, SubscriptionWasteInsightGenerator>();
@@ -92,28 +93,22 @@ builder.Services.AddScoped<IInsightGenerator, CashFlowForecastInsightGenerator>(
 builder.Services.AddScoped<IInsightGenerator, BenchmarkInsightGenerator>();
 builder.Services.AddScoped<IInsightGenerator, PredictionInsightGenerator>();
 
-builder.Services.AddScoped<IIntelligenceService, IntelligenceService>();
-builder.Services.AddScoped<IBenchmarkService, BenchmarkService>();
-builder.Services.AddScoped<IPredictionService, PredictionService>();
-builder.Services.AddScoped<RuleBasedExecutiveSummaryService>();
-builder.Services.AddScoped<IExecutiveSummaryService, RuleBasedExecutiveSummaryService>();
-builder.Services.AddScoped<IExecutiveSummaryService, AiExecutiveSummaryService>();
-
+//repositories
+builder.Services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
+builder.Services.AddScoped<IBusinessAccessRepository, BusinessAccessRepository>();
+builder.Services.AddScoped<IInsightRepository, InsightRepository>();
 builder.Services.AddScoped<IInterchangeOptimizationRepository, InterchangeOptimizationRepository>();
-builder.Services.AddScoped<IInsightContributor, InterchangeOptimizationService>();
-
-builder.Services.AddScoped<IInsightRanker, InsightRanker>();
-
-builder.Services.AddScoped<IInsightService, InsightService>();
-builder.Services.AddScoped<IInsightContributor, SpendAnomalyInsightService>();
+builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+builder.Services.AddScoped<ITransactionQueryRepository, TransactionQueryRepository>();
+builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-//builder.Services.AddScoped<CsvSourceAdapter>();
-//builder.Services.AddScoped<IngestionService>();
 
 var app = builder.Build();
 

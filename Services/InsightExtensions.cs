@@ -1,5 +1,5 @@
 using FinancialIntelligence.Api.Models;
-namespace FinancialIntelligence.Api.Services.Insights;
+namespace FinancialIntelligence.Api.Services;
 
 public static class InsightRankingExtensions
 {

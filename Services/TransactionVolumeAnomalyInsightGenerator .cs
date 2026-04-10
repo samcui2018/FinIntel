@@ -2,13 +2,14 @@ using Dapper;
 using FinancialIntelligence.Api.Models;
 using Microsoft.Data.SqlClient;
 
+
 namespace FinancialIntelligence.Api.Services.Insights;
 
-public class SpendAnomalyInsightGenerator : IInsightGenerator
+public class TransactionVolumeAnomalyInsightGenerator : IInsightGenerator
 {
     private readonly string _connectionString;
 
-    public SpendAnomalyInsightGenerator(IConfiguration configuration)
+    public TransactionVolumeAnomalyInsightGenerator(IConfiguration configuration)
     {
         _connectionString = configuration.GetConnectionString("FinIntelConnection")
             ?? throw new InvalidOperationException("Missing FinIntelConnection.");
@@ -71,9 +72,9 @@ public class SpendAnomalyInsightGenerator : IInsightGenerator
             InsightId = Guid.NewGuid(),
             LoadId = loadId,
             BusinessId = businessId,
-            InsightType = "spend_anomaly",
+            InsightType = "transaction_volume_anomaly",
             Severity = severity,
-            Title = "Significant spend change detected",
+            Title = "Significant transaction volume change",
             Description = $"Transaction volume has {direction} by {Math.Abs(pctChange):P0} compared with the prior 30-day period.",
             ImpactLabel = $"{Math.Abs(pctChange):P0} change",
             ImpactValue = Math.Round(Math.Abs(pctChange) * 100m, 2),

@@ -2,9 +2,9 @@ using FinancialIntelligence.Api.Dtos.Analytics;
 using FinancialIntelligence.Api.Models.Intelligence;
 using FinancialIntelligence.Api.Repositories;
 
-namespace FinancialIntelligence.Api.Services.Intelligence;
+namespace FinancialIntelligence.Api.Services;
 
-public sealed class InterchangeOptimizationService : IInsightContributor
+public sealed class InterchangeOptimizationService : IInsightAnalyzer
 {
     private const decimal EcommerceOptimizationRateDelta = 0.0035m;
     private const decimal Level2Level3RateDelta = 0.0065m;
