@@ -87,6 +87,7 @@ coverage/
 # Vite / React specifics
 ############################################
 *.local
+*appsettings.local.*
 *.cache/
 .vite/
 
