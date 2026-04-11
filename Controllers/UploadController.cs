@@ -24,7 +24,7 @@ public sealed class UploadsController : ControllerBase
 
     [HttpPost]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<UploadTransactionsResponse>> UploadCsv(
+    public async Task<ActionResult<UploadTransactionsResponse>> Upload(
         Guid businessId, // now comes from route
         IFormFile file,
         CancellationToken cancellationToken)
@@ -36,7 +36,7 @@ public sealed class UploadsController : ControllerBase
 
         if (file is null || file.Length == 0)
         {
-            return BadRequest("A CSV file is required.");
+            return BadRequest("A CSV or Excel file is required.");
         }
 
         if (businessId == Guid.Empty)
@@ -54,7 +54,7 @@ public sealed class UploadsController : ControllerBase
             return Forbid();
         }
 
-        var response = await _uploadService.UploadCsvAsync(
+        var response = await _uploadService.UploadFileAsync(
             file,
             businessId,
             userId,

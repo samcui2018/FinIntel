@@ -66,6 +66,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBenchmarkService, BenchmarkService>();
 builder.Services.AddScoped<IBusinessService, BusinessService>();
 builder.Services.AddScoped<ICsvSourceAdapter, CsvSourceAdapter>();
+builder.Services.AddScoped<IExcelSourceAdapter, ExcelSourceAdapter>();
 builder.Services.AddScoped<IExecutiveSummaryService, RuleBasedExecutiveSummaryService>();
 builder.Services.AddScoped<IExecutiveSummaryService, AiExecutiveSummaryService>();
 builder.Services.AddScoped<IInsightAnalyzer, InterchangeOptimizationService>();
