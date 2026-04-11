@@ -1,4 +1,4 @@
-namespace FinancialIntelligence.Api.Services.Ai;
+namespace FinancialIntelligence.Api.Services;
 
 public sealed class OpenAiSettings
 {

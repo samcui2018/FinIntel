@@ -2,6 +2,7 @@ using FinancialIntelligence.Api.Models;
 using System.Text;
 using FinancialIntelligence.Api.Adapters;
 using FinancialIntelligence.Api.Repositories;
+using FinancialIntelligence.Api.Dtos.Analytics;
 namespace FinancialIntelligence.Api.Services;
 
 public class AiChatService : IAiChatService
@@ -10,17 +11,20 @@ public class AiChatService : IAiChatService
     private readonly IBusinessAuthorizationService _businessAuthorizationService;
     private readonly IAnalyticsRepository _analyticsRepository;
     private readonly IInsightRepository _insightRepository;
+    private readonly IAnalyticsService _analyticsService;
 
     public AiChatService(
         IGenerativeAiClient openAiClient,
         IBusinessAuthorizationService businessAuthorizationService,
         IAnalyticsRepository analyticsRepository,
-        IInsightRepository insightRepository)
+        IInsightRepository insightRepository,
+        IAnalyticsService analyticsService)
     {
         _openAiClient = openAiClient;
         _businessAuthorizationService = businessAuthorizationService;
         _analyticsRepository = analyticsRepository;
         _insightRepository = insightRepository;
+        _analyticsService = analyticsService;
     }
 
     public async Task<AiChatResponse> ChatAsync(
@@ -43,11 +47,11 @@ public class AiChatService : IAiChatService
         }
 
         var summary = await _analyticsRepository.GetSpendSummaryAsync(userId,businessId);
-        var insights = await _analyticsRepository.GetTopInsightsAsync(businessId, 5);
+        var insights = await _analyticsService.GetTopInsightsAsync(businessId, 5);
 
-        var prompt = BuildPrompt(summary, insights, request);
+        var prompt = BuildPrompt(summary, insights.Insights, request);
 
-        var reply = await _openAiClient.GetChatCompletionAsync(prompt, cancellationToken);
+        var reply = await _openAiClient.ChatAsync("", prompt, null, cancellationToken);
 
         return new AiChatResponse
         {
@@ -63,7 +67,7 @@ public class AiChatService : IAiChatService
 
     private static string BuildPrompt(
         AnalyticsSummaryDto? summary,
-        IReadOnlyList<StoredInsightDto> insights,
+        IReadOnlyList<InsightDto> insights,
         AiChatRequest request)
     {
         var sb = new StringBuilder();

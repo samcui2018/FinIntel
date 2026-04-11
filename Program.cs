@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using FinancialIntelligence.Api.Services.Insights;
 using FinancialIntelligence.Api.Services.Intelligence;
-using FinancialIntelligence.Api.Services.Ai;
+using FinancialIntelligence.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -105,6 +105,11 @@ builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<ITransactionQueryRepository, TransactionQueryRepository>();
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+//builder.Services.AddScoped<IAiChatService, AiChatService>();
+builder.Services.AddScoped<IBusinessAuthorizationService, BusinessAuthorizationService>();
+builder.Services.AddScoped<IAiChatService, AiChatService>();
+builder.Services.AddHttpClient<IGenerativeAiClient, OpenAiClient>();
 
 
 builder.Services.AddControllers();
