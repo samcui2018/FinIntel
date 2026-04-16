@@ -8,15 +8,43 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using FinancialIntelligence.Api.Services.Insights;
 using FinancialIntelligence.Api.Services.Intelligence;
-using FinancialIntelligence.Api.Services;
+//using FinancialIntelligence.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
+Console.WriteLine("---- DEBUG JWT ----");
+Console.WriteLine("Connection String: " + Environment.GetEnvironmentVariable("ConnectionStrings__FinIntelConnection"));
+Console.WriteLine("Env Jwt__Audience: " + Environment.GetEnvironmentVariable("Jwt__Audience"));
+Console.WriteLine("Env Jwt__Issuer: " + Environment.GetEnvironmentVariable("Jwt__Issuer"));
+Console.WriteLine("Env Jwt__Key: " + Environment.GetEnvironmentVariable("Jwt__Key"));
+Console.WriteLine("Config Jwt:Key: " + builder.Configuration["Jwt:Key"]);
+Console.WriteLine("-------------------");
 
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("Jwt"));
 
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt settings are missing.");
+
+if (string.IsNullOrWhiteSpace(jwtSettings.Key))
+    throw new InvalidOperationException("Jwt:Key is missing.");
+
+builder.Services.Configure<OpenAiSettings>(
+    builder.Configuration.GetSection("OpenAi"));
+
+var openAiSettings = builder.Configuration.GetSection("OpenAi").Get<OpenAiSettings>()
+    ?? throw new InvalidOperationException("OpenAI settings are missing.");
+
+if (string.IsNullOrWhiteSpace(openAiSettings.ApiKey))
+    throw new InvalidOperationException("OpenAi:ApiKey is missing.");
+
+if (string.IsNullOrWhiteSpace(openAiSettings.Model))
+    throw new InvalidOperationException("OpenAi:Model is missing.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -50,8 +78,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.Configure<OpenAiSettings>(
-    builder.Configuration.GetSection("OpenAi"));
 
 builder.Services.AddHttpClient<IGenerativeAiClient, OpenAiClient>()
     .SetHandlerLifetime(TimeSpan.FromMinutes(5))
@@ -72,7 +98,7 @@ builder.Services.AddScoped<IExecutiveSummaryService, AiExecutiveSummaryService>(
 builder.Services.AddScoped<IInsightAnalyzer, InterchangeOptimizationService>();
 builder.Services.AddScoped<IInsightRanker, InsightRanker>();
 builder.Services.AddScoped<IInsightService, InsightService>();
-builder.Services.AddScoped<IInsightAnalyzer, SpendAnomalyInsightService>();
+//builder.Services.AddScoped<IInsightAnalyzer, SpendAnomalyInsightService>();
 builder.Services.AddScoped<IIntelligenceService, IntelligenceService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -93,6 +119,9 @@ builder.Services.AddScoped<IInsightGenerator, SubscriptionWasteInsightGenerator>
 builder.Services.AddScoped<IInsightGenerator, CashFlowForecastInsightGenerator>();
 builder.Services.AddScoped<IInsightGenerator, BenchmarkInsightGenerator>();
 builder.Services.AddScoped<IInsightGenerator, PredictionInsightGenerator>();
+
+
+builder.Services.AddScoped<IInsightAnalyzer, PythonSpendAnomalyInsightGenerator>();
 
 //repositories
 builder.Services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();

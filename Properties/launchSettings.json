@@ -7,8 +7,12 @@
       "launchBrowser": false,
       "applicationUrl": "http://localhost:5020",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Jwt__Key": "your-very-long-development-signing-key-at-least-32-characters",
+        "Jwt__Issuer": "FinIntel",
+        "Jwt__Audience": "FinIntelUsers"
+      },
+      
     },
     "https": {
       "commandName": "Project",

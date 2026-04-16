@@ -12,6 +12,7 @@ public sealed class BusinessRepository : IBusinessRepository
     {
         _connectionString = configuration.GetConnectionString("FinIntelConnection")
             ?? throw new InvalidOperationException("Connection string 'FinIntelConnection' is missing.");
+        Console.WriteLine($"Connection string exists: {!string.IsNullOrEmpty(_connectionString)}");
     }
 
     public async Task<IReadOnlyList<BusinessResponse>> GetBusinessesForUserAsync(

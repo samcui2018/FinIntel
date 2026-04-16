@@ -1,3 +1,4 @@
+using FinancialIntelligence.Api.Dtos.Intelligence;
 namespace FinancialIntelligence.Api.Models.Intelligence;
 
 public sealed class InterchangeOptimizationSnapshot
@@ -15,6 +16,7 @@ public sealed class EcommerceOptimizationCandidate
     public int AffectedTransactionCount { get; set; }
     public decimal AffectedVolume { get; set; }
     public string TopMerchantsCsv { get; set; } = string.Empty;
+    public IReadOnlyList<ChannelBreakdownDto> ChannelBreakdown { get; set; } = Array.Empty<ChannelBreakdownDto>();
 }
 
 public sealed class Level23OptimizationCandidate
@@ -24,6 +26,7 @@ public sealed class Level23OptimizationCandidate
     public int AffectedTransactionCount { get; set; }
     public decimal AffectedVolume { get; set; }
     public string TopMerchantsCsv { get; set; } = string.Empty;
+    public IReadOnlyList<ChannelBreakdownDto> ChannelBreakdown { get; set; } = Array.Empty<ChannelBreakdownDto>();
 }
 
 public sealed class SmallTicketOptimizationCandidate
@@ -34,6 +37,7 @@ public sealed class SmallTicketOptimizationCandidate
     public decimal AffectedVolume { get; set; }
     public decimal ThresholdAmount { get; set; }
     public string TopMerchantsCsv { get; set; } = string.Empty;
+    public IReadOnlyList<ChannelBreakdownDto> ChannelBreakdown { get; set; } = Array.Empty<ChannelBreakdownDto>();
 }
 
 public sealed class ManualEntryOptimizationCandidate
@@ -43,4 +47,5 @@ public sealed class ManualEntryOptimizationCandidate
     public int AffectedTransactionCount { get; set; }
     public decimal AffectedVolume { get; set; }
     public string TopMerchantsCsv { get; set; } = string.Empty;
+    public IReadOnlyList<ChannelBreakdownDto> ChannelBreakdown { get; set; } = Array.Empty<ChannelBreakdownDto>();
 }

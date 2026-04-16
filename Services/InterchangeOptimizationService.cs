@@ -80,7 +80,16 @@ public sealed class InterchangeOptimizationService : IInsightAnalyzer
                 ["shareOfAnalyzedSpend"] = shareOfVolume,
                 ["confidence"] = confidence,
                 ["topMerchants"] = candidate.TopMerchantsCsv
-            }
+            },
+            VisualizationType = "bar",
+            Visualization = InsightVisualizationFactory.CreateBarChart(
+                title: "AVS/CVV capture rate by channel",
+                labels: candidate.ChannelBreakdown.Select(x => x.Channel).ToList(),
+                new InsightVisualizationSeriesDto
+                {
+                    Name = "AVS/CVV Capture Rate",
+                    Values = candidate.ChannelBreakdown.Select(x => x.CaptureRate).ToList()
+                })  
         });
     }
 
@@ -123,7 +132,16 @@ public sealed class InterchangeOptimizationService : IInsightAnalyzer
                 ["shareOfAnalyzedSpend"] = shareOfVolume,
                 ["confidence"] = confidence,
                 ["topMerchants"] = candidate.TopMerchantsCsv
-            }
+            },
+            VisualizationType = "bar",
+            Visualization = InsightVisualizationFactory.CreateBarChart(
+                title: "Level 2/3 qualification rate by channel",
+                labels: candidate.ChannelBreakdown.Select(x => x.Channel).ToList(),
+                new InsightVisualizationSeriesDto
+                {
+                    Name = "Level 2/3 Qualification Rate",
+                    Values = candidate.ChannelBreakdown.Select(x => x.QualificationRate).ToList()
+                })
         });
     }
 
@@ -167,7 +185,16 @@ public sealed class InterchangeOptimizationService : IInsightAnalyzer
                 ["smallTicketThreshold"] = candidate.ThresholdAmount,
                 ["confidence"] = confidence,
                 ["topMerchants"] = candidate.TopMerchantsCsv
-            }
+            },
+            VisualizationType = "bar",
+            Visualization = InsightVisualizationFactory.CreateBarChart(
+                title: "Small-ticket transaction share by channel",
+                labels: candidate.ChannelBreakdown.Select(x => x.Channel).ToList(),
+                new InsightVisualizationSeriesDto
+                {
+                    Name = "Small-ticket Transaction Share",
+                    Values = candidate.ChannelBreakdown.Select(x => x.TransactionShare).ToList()
+                })
         });
     }
 
@@ -210,7 +237,16 @@ public sealed class InterchangeOptimizationService : IInsightAnalyzer
                 ["shareOfAnalyzedSpend"] = shareOfVolume,
                 ["confidence"] = confidence,
                 ["topMerchants"] = candidate.TopMerchantsCsv
-            }
+            },
+            VisualizationType = "bar",
+            Visualization = InsightVisualizationFactory.CreateBarChart(
+                title: "Manual-entry transaction share by channel",
+                labels: candidate.ChannelBreakdown.Select(x => x.Channel).ToList(),
+                new InsightVisualizationSeriesDto
+                {
+                    Name = "Manual-entry Transaction Share",
+                    Values = candidate.ChannelBreakdown.Select(x => x.TransactionShare).ToList()
+                })
         });
     }
 

@@ -11,4 +11,5 @@ public sealed class TransactionRecord
     public string? NormalizedMerchantName { get; set; }
     public string? Description { get; set; }
     public DateTime CreatedAtUtc { get; set; }
+    public string? Channel { get; set; }
 }

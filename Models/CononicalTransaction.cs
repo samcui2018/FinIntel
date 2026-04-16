@@ -29,7 +29,7 @@ public sealed class CanonicalTransaction
     public string? MerchantName { get; set; }
     public string? NormalizedMerchantName { get; set; }
     public string? Description { get; set; }
-
+    public string? Channel { get; set; }
     public EntryDirection EntryDirection { get; set; }
     public TransactionClass TransactionClass { get; set; }
 

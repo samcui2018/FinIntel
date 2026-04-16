@@ -199,7 +199,16 @@ public class AnalyticsService : IAnalyticsService
                     ["merchantSpend"] = top.TotalAmount,
                     ["totalSpend"] = total,
                     ["concentrationPct"] = Math.Round(concentrationPct, 2)
-                }
+                },
+                VisualizationType = "bar",
+                Visualization = InsightVisualizationFactory.CreateBarChart(
+                    title: "Top merchant spend concentration",
+                    labels: merchants.Select(x => x.MerchantName).ToList(),
+                    new InsightVisualizationSeriesDto
+                    {
+                        Name = "Spend",
+                        Values = merchants.Select(x => x.TotalAmount).ToList()
+                    })
             }
         };
     }
@@ -252,7 +261,16 @@ public class AnalyticsService : IAnalyticsService
                     ["categorySpend"] = top.TotalAmount,
                     ["totalSpend"] = total,
                     ["percentage"] = Math.Round(pct, 2)
-                }
+                },
+                VisualizationType = "pie",
+                Visualization = InsightVisualizationFactory.CreatePieChart(
+                    title: "Spend by category",
+                    labels: categories.Select(x => x.Category).ToList(),
+                    new InsightVisualizationSeriesDto
+                    {
+                        Name = "Spend",
+                        Values = categories.Select(x => x.TotalAmount).ToList()
+                    })
             }
         };
     }
@@ -290,7 +308,13 @@ public class AnalyticsService : IAnalyticsService
                 {
                     ["duplicateCount"] = duplicates.Count,
                     ["totalImpact"] = totalImpact
-                }
+                },
+                // VisualizationType = "table",
+                // Visualization = InsightVisualizationFactory.CreateTable(
+                //     title: "Potential duplicate transactions",
+                //     columns: new[] { "Date", "Merchant", "Amount" },
+                //     rows: duplicates.Select(x => new object[] { x.TransactionDate.ToString("yyyy-MM-dd"), x.MerchantName, x.Amount }).ToList()
+                // )
             }
         };
     }
@@ -339,74 +363,4 @@ public class AnalyticsService : IAnalyticsService
             Score = (decimal)ranked.PriorityScore
         };
     }
-    // private static InsightDto? TryBuildSpendAnomalyInsight(
-    // IReadOnlyList<MonthlySpendDto> monthlySpend)
-    // {
-    //     if (monthlySpend is null || monthlySpend.Count < 4)
-    //     {
-    //         return null;
-    //     }
-
-    //     var ordered = monthlySpend
-    //         .OrderBy(x => x.MonthStart)
-    //         .ToList();
-
-    //     var avg = ordered.Average(x => x.Amount);
-    //     if (avg <= 0)
-    //     {
-    //         return null;
-    //     }
-
-    //     var latest = ordered[^1];
-    //     var pctAboveAverage = ((latest.Amount - avg) / avg) * 100m;
-
-    //     // if (pctAboveAverage < 25m)
-    //     // {
-    //     //     return null;
-    //     // }
-
-    //     var estimatedImpact = latest.Amount - avg;
-
-    //     return BuildSpendAnomalyInsight(
-    //         monthlySpend: ordered,
-    //         anomalyMonth: latest,
-    //         estimatedImpact: Math.Round(estimatedImpact, 2),
-    //         score: pctAboveAverage >= 50m ? 90m : 78m);
-    // }
-    // // inside AnalyticsService or SpendAnomalyInsightService
-    // private static InsightDto BuildSpendAnomalyInsight(
-    //     IReadOnlyList<MonthlySpendDto> monthlySpend,
-    //     MonthlySpendDto anomalyMonth,
-    //     decimal estimatedImpact,
-    //     decimal score = 88m)
-    // {
-    //     var ordered = monthlySpend
-    //         .OrderBy(x => x.MonthStart)
-    //         .ToList();
-
-    //     var labels = ordered.Select(x => x.MonthStart.ToString("yyyy-MM")).ToList();
-    //     var spendValues = ordered.Select(x => x.Amount).ToList();
-
-    //     var highlightIndex = ordered.FindIndex(x => x.MonthStart == anomalyMonth.MonthStart);
-
-    //     return new InsightDto
-    //     {
-    //         Type = "SpendAnomaly",
-    //         Title = "Unusual spending spike detected",
-    //         Description = $"Spending in {anomalyMonth.MonthStart:yyyy-MM} was unusually high compared with the recent pattern.",
-    //         Severity = estimatedImpact >= 1000m ? "High" : "Medium",
-    //         Score = score,
-    //         EstimatedImpact = estimatedImpact,
-    //         VisualizationType = "line",
-    //         Visualization = InsightVisualizationFactory.CreateLineChart(
-    //             title: "Monthly spend trend",
-    //             labels: labels,
-    //             highlightIndexes: highlightIndex >= 0 ? new[] { highlightIndex } : Array.Empty<int>(),
-    //             new InsightVisualizationSeriesDto
-    //             {
-    //                 Name = "Spend",
-    //                 Values = spendValues
-    //             })
-    //     };
-    // }
 }

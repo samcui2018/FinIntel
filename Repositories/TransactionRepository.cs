@@ -137,26 +137,27 @@ public sealed class TransactionRepository : ITransactionRepository
                     MerchantName = reader.IsDBNull(17) ? null : reader.GetString(17),
                     NormalizedMerchantName = reader.IsDBNull(18) ? null : reader.GetString(18),
                     Description = reader.IsDBNull(19) ? null : reader.GetString(19),
+                    Channel = reader.IsDBNull(20) ? null : reader.GetString(20),
 
-                    EntryDirection = (EntryDirection)reader.GetByte(20),
-                    TransactionClass = (TransactionClass)reader.GetByte(21),
-                    CountsAsSpend = reader.GetBoolean(22),
-                    CountsAsRevenue = reader.GetBoolean(23),
-                    CountsAsTransfer = reader.GetBoolean(24),
-                    CountsAsDebtService = reader.GetBoolean(25),
+                    EntryDirection = (EntryDirection)reader.GetByte(21),
+                    TransactionClass = (TransactionClass)reader.GetByte(22),
+                    CountsAsSpend = reader.GetBoolean(23),
+                    CountsAsRevenue = reader.GetBoolean(24),
+                    CountsAsTransfer = reader.GetBoolean(25),
+                    CountsAsDebtService = reader.GetBoolean(26),
 
-                    RawTransactionType = reader.IsDBNull(26) ? null : reader.GetString(26),
-                    RawDebitCreditIndicator = reader.IsDBNull(27) ? null : reader.GetString(27),
-                    SourceProfileId = reader.IsDBNull(28) ? null : reader.GetString(28),
+                    RawTransactionType = reader.IsDBNull(27) ? null : reader.GetString(27),
+                    RawDebitCreditIndicator = reader.IsDBNull(28) ? null : reader.GetString(28),
+                    SourceProfileId = reader.IsDBNull(29) ? null : reader.GetString(29),
 
-                    DirectionConfidence = (ConfidenceLevel)reader.GetByte(29),
-                    ClassificationConfidence = (ConfidenceLevel)reader.GetByte(30),
-                    DirectionRuleApplied = reader.IsDBNull(31) ? null : reader.GetString(31),
-                    ClassificationRuleApplied = reader.IsDBNull(32) ? null : reader.GetString(32),
-                    NormalizationNotes = reader.IsDBNull(33) ? null : reader.GetString(33),
+                    DirectionConfidence = (ConfidenceLevel)reader.GetByte(30),
+                    ClassificationConfidence = (ConfidenceLevel)reader.GetByte(31),
+                    DirectionRuleApplied = reader.IsDBNull(32) ? null : reader.GetString(32),
+                    ClassificationRuleApplied = reader.IsDBNull(33) ? null : reader.GetString(33),
+                    NormalizationNotes = reader.IsDBNull(34) ? null : reader.GetString(34),
 
-                    IsPossibleDuplicateCharge = reader.GetBoolean(34),
-                    DuplicateReason = reader.IsDBNull(35) ? null : reader.GetString(35)
+                    IsPossibleDuplicateCharge = reader.GetBoolean(35),
+                    DuplicateReason = reader.IsDBNull(36) ? null : reader.GetString(36)
                 });
             }
 

@@ -49,4 +49,17 @@ public static class InsightVisualizationFactory
             Series = series.ToList()
         };
     }
+    public static InsightVisualizationDto CreatePieChart(
+        string title,
+        IEnumerable<string> labels,
+        params InsightVisualizationSeriesDto[] series)
+    {
+        return new InsightVisualizationDto
+        {
+            ChartType = "pie",
+            Title = title,
+            Labels = labels.ToList(),
+            Series = series.ToList()
+        };
+    }
 }

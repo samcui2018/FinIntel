@@ -13,6 +13,7 @@ public class UserRepository : IUserRepository
     {
         _connectionString = configuration.GetConnectionString("FinIntelConnection")
             ?? throw new InvalidOperationException("Missing connection string");
+        Console.WriteLine($"Connection string exists: {_connectionString}");
     }
 
     public async Task<User?> GetByEmailAsync(
