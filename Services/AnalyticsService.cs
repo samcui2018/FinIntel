@@ -10,17 +10,20 @@ public class AnalyticsService : IAnalyticsService
     private readonly IAnalyticsRepository _analyticsRepository;
     private readonly IInsightRanker _insightRanker;
     private readonly IInsightAnalyzer _interchangeOptimizationService;
+    private readonly IInsightAnalyzer _pythonInsightGenerator;
 
    public AnalyticsService(
         IAnalyticsRepository analyticsRepository,
-        IInsightAnalyzer interchangeOptimizationService,
+        //IInsightAnalyzer interchangeOptimizationService,
+        IInsightAnalyzer pythonInsightGenerator,        
         IInsightRanker insightRanker)
     {
         _analyticsRepository = analyticsRepository;
-        _interchangeOptimizationService = interchangeOptimizationService;
+        //_interchangeOptimizationService = interchangeOptimizationService;
+        _pythonInsightGenerator = pythonInsightGenerator;
         _insightRanker = insightRanker;
     } 
-
+    
     public Task<AnalyticsSummaryDto> GetSummaryAsync(
         Guid userId,
         Guid businessId,
@@ -53,9 +56,11 @@ public class AnalyticsService : IAnalyticsService
         var topMerchantTask = _analyticsRepository.GetTopMerchantSpendAsync(businessId, monthsBack, 10, cancellationToken);
         var monthlyCategoryTask = _analyticsRepository.GetMonthlyCategorySpendAsync(businessId, monthsBack, cancellationToken);
         var duplicateTask = _analyticsRepository.GetPossibleDuplicateChargesAsync(businessId, monthsBack, cancellationToken);
-        var interchangeTask = _interchangeOptimizationService.AnalyzeAsync(businessId, monthsBack, cancellationToken);
+        // var interchangeTask = _interchangeOptimizationService.AnalyzeAsync("SpendAnomaly", businessId, monthsBack, cancellationToken);
+        var pythonAnomalyTask = _pythonInsightGenerator.AnalyzeAsync("SpendAnomaly", businessId, monthsBack, cancellationToken);
+        var pythonForcastTask = _pythonInsightGenerator.AnalyzeAsync("SpendForecast", businessId, monthsBack, cancellationToken);
 
-        await Task.WhenAll(monthlySpendTask, topMerchantTask, monthlyCategoryTask, duplicateTask, interchangeTask);
+        await Task.WhenAll(monthlySpendTask, topMerchantTask, monthlyCategoryTask, duplicateTask, pythonAnomalyTask, pythonForcastTask);
 
         var candidates = new List<InsightDto>();
 
@@ -63,15 +68,11 @@ public class AnalyticsService : IAnalyticsService
         candidates.AddRange(BuildVendorConcentrationInsights(businessId, topMerchantTask.Result));
         candidates.AddRange(BuildCategorySpikeInsights(businessId, monthlyCategoryTask.Result));
         candidates.AddRange(BuildDuplicateChargeInsights(businessId, duplicateTask.Result)); 
-        candidates.AddRange(interchangeTask.Result);
+        //candidates.AddRange(interchangeTask.Result);
+        candidates.AddRange(pythonAnomalyTask.Result);
+        candidates.AddRange(pythonForcastTask.Result);
 
-        // New: spend anomaly with visualization
-        // var spendAnomalyInsight = TryBuildSpendAnomalyInsight(monthlySpendTask.Result);
-        // if (spendAnomalyInsight is not null)
-        // {
-        //     candidates.Add(spendAnomalyInsight);
-        // }
-
+  
         var insightRecords = candidates
         .Select(MapToInsightRecord)
         .ToList();

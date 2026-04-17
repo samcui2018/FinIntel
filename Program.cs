@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using FinancialIntelligence.Api.Services.Insights;
 using FinancialIntelligence.Api.Services.Intelligence;
+using FinancialIntelligence.Api.Models;
 //using FinancialIntelligence.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -95,12 +96,12 @@ builder.Services.AddScoped<ICsvSourceAdapter, CsvSourceAdapter>();
 builder.Services.AddScoped<IExcelSourceAdapter, ExcelSourceAdapter>();
 builder.Services.AddScoped<IExecutiveSummaryService, RuleBasedExecutiveSummaryService>();
 builder.Services.AddScoped<IExecutiveSummaryService, AiExecutiveSummaryService>();
-builder.Services.AddScoped<IInsightAnalyzer, InterchangeOptimizationService>();
+//builder.Services.AddScoped<IInsightAnalyzer, InterchangeOptimizationService>();
 builder.Services.AddScoped<IInsightRanker, InsightRanker>();
 builder.Services.AddScoped<IInsightService, InsightService>();
 //builder.Services.AddScoped<IInsightAnalyzer, SpendAnomalyInsightService>();
 builder.Services.AddScoped<IIntelligenceService, IntelligenceService>();
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+//builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IPredictionService, PredictionService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -121,7 +122,7 @@ builder.Services.AddScoped<IInsightGenerator, BenchmarkInsightGenerator>();
 builder.Services.AddScoped<IInsightGenerator, PredictionInsightGenerator>();
 
 
-builder.Services.AddScoped<IInsightAnalyzer, PythonSpendAnomalyInsightGenerator>();
+builder.Services.AddScoped<IInsightAnalyzer, PythonInsightGenerator>();
 
 //repositories
 builder.Services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
@@ -140,6 +141,10 @@ builder.Services.AddScoped<IBusinessAuthorizationService, BusinessAuthorizationS
 builder.Services.AddScoped<IAiChatService, AiChatService>();
 builder.Services.AddHttpClient<IGenerativeAiClient, OpenAiClient>();
 
+builder.Services.Configure<PythonInsightsOptions>(
+    builder.Configuration.GetSection("PythonInsights"));
+
+builder.Services.AddScoped<IPythonInsightRunner, PythonInsightRunner>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

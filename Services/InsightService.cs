@@ -21,7 +21,7 @@ public sealed class InsightService : IInsightService
         CancellationToken cancellationToken = default)
     {
         var tasks = _contributors
-            .Select(c => c.AnalyzeAsync(businessId, monthsBack, cancellationToken))
+            .Select(c => c.AnalyzeAsync("SpendAnomaly", businessId, monthsBack, cancellationToken))
             .ToList();
 
         await Task.WhenAll(tasks);

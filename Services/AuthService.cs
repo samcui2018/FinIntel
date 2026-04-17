@@ -7,13 +7,15 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IBusinessAccessRepository _businessAccessRepository;
-    private readonly IJwtTokenService _jwtTokenService;
+    // private readonly IJwtTokenService _jwtTokenService;
+    private readonly ITokenService _jwtTokenService;
+
     private readonly IPasswordHasher _passwordHasher;
 
     public AuthService(
         IUserRepository userRepository,
         IBusinessAccessRepository businessAccessRepository,
-        IJwtTokenService jwtTokenService,
+        ITokenService jwtTokenService,
         IPasswordHasher passwordHasher)
     {
         _userRepository = userRepository;
@@ -38,7 +40,7 @@ public class AuthService : IAuthService
         var businesses = await _businessAccessRepository.GetBusinessesForUserAsync(user.UserId, cancellationToken);
         var currentBusiness = businesses.FirstOrDefault(x => x.IsDefault) ?? businesses.FirstOrDefault();
 
-        var token = _jwtTokenService.GenerateToken(user);
+        var token = _jwtTokenService.CreateToken(user);
 
         return new LoginResponseDto
         {
