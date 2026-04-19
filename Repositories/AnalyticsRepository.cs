@@ -36,32 +36,37 @@ public class AnalyticsRepository : IAnalyticsRepository
 
         var results = new List<UploadHistoryItemResponse>();
 
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
-
-        await using var command = new SqlCommand(sql, connection);
-        command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.UniqueIdentifier) { Value = userId });
-
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        while (await reader.ReadAsync(cancellationToken))
+        // await using var connection = new SqlConnection(_connectionString);
+        // await connection.OpenAsync(cancellationToken);
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
         {
-            results.Add(new UploadHistoryItemResponse
-            {
-                LoadId = reader.GetGuid(reader.GetOrdinal("LoadId")),
-                BusinessName = reader.GetString(reader.GetOrdinal("BusinessName")),
-                SourceName = reader.GetString(reader.GetOrdinal("SourceName")),
-                RowsInFile = reader.GetInt32(reader.GetOrdinal("RowsInFile")),
-                RowsInserted = reader.IsDBNull(reader.GetOrdinal("RowsInserted"))
-                    ? null
-                    : reader.GetInt32(reader.GetOrdinal("RowsInserted")),
-                Status = reader.GetString(reader.GetOrdinal("Status")),
-                CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt"))
-            });
-        }
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
 
-        return results;
-    }
+            await using var command = new SqlCommand(sql, connection);
+            command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.UniqueIdentifier) { Value = userId });
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                results.Add(new UploadHistoryItemResponse
+                {
+                    LoadId = reader.GetGuid(reader.GetOrdinal("LoadId")),
+                    BusinessName = reader.GetString(reader.GetOrdinal("BusinessName")),
+                    SourceName = reader.GetString(reader.GetOrdinal("SourceName")),
+                    RowsInFile = reader.GetInt32(reader.GetOrdinal("RowsInFile")),
+                    RowsInserted = reader.IsDBNull(reader.GetOrdinal("RowsInserted"))
+                        ? null
+                        : reader.GetInt32(reader.GetOrdinal("RowsInserted")),
+                    Status = reader.GetString(reader.GetOrdinal("Status")),
+                    CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt"))
+                });
+            }
+
+            return results;
+        }, cancellationToken);
+    }      
 
     public async Task<AnalyticsSummaryDto> GetSpendSummaryAsync(
         Guid userId,
@@ -119,33 +124,39 @@ public class AnalyticsRepository : IAnalyticsRepository
               AND u.BusinessId = @BusinessId;
             """;
 
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
+        // await using var connection = new SqlConnection(_connectionString);
+        // await connection.OpenAsync(cancellationToken);
 
-        await using var command = new SqlCommand(sql, connection);
-        command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.UniqueIdentifier) { Value = userId });
-        command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
-
-        await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken);
-
-        if (!await reader.ReadAsync(cancellationToken))
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
         {
-            return new AnalyticsSummaryDto();
-        }
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
 
-        return new AnalyticsSummaryDto
-        {
-            TransactionCount = reader.GetInt32(reader.GetOrdinal("TransactionCount")),
-            TotalAmount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
-            AverageAmount = reader.GetDecimal(reader.GetOrdinal("AverageAmount")),
-            ThisMonthAmount = reader.GetDecimal(reader.GetOrdinal("ThisMonthAmount")),
-            TopMerchant = reader.IsDBNull(reader.GetOrdinal("TopMerchant"))
-                ? null
-                : reader.GetString(reader.GetOrdinal("TopMerchant")),
-            LatestUploadAt = reader.IsDBNull(reader.GetOrdinal("LatestUploadAt"))
-                ? null
-                : reader.GetDateTime(reader.GetOrdinal("LatestUploadAt"))
-        };
+             await using var command = new SqlCommand(sql, connection);
+            command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.UniqueIdentifier) { Value = userId });
+            command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
+
+            await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken);
+
+            if (!await reader.ReadAsync(cancellationToken))
+            {
+                return new AnalyticsSummaryDto();
+            }
+
+            return new AnalyticsSummaryDto
+            {
+                TransactionCount = reader.GetInt32(reader.GetOrdinal("TransactionCount")),
+                TotalAmount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
+                AverageAmount = reader.GetDecimal(reader.GetOrdinal("AverageAmount")),
+                ThisMonthAmount = reader.GetDecimal(reader.GetOrdinal("ThisMonthAmount")),
+                TopMerchant = reader.IsDBNull(reader.GetOrdinal("TopMerchant"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("TopMerchant")),
+                LatestUploadAt = reader.IsDBNull(reader.GetOrdinal("LatestUploadAt"))
+                    ? null
+                    : reader.GetDateTime(reader.GetOrdinal("LatestUploadAt"))
+            };
+        }, cancellationToken);      
     }
 
     public async Task<IReadOnlyList<MonthlyTrendPointResponse>> GetMonthlySpendTrendAsync(
@@ -176,26 +187,29 @@ public class AnalyticsRepository : IAnalyticsRepository
 
         var results = new List<MonthlyTrendPointResponse>();
 
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
-
-        await using var command = new SqlCommand(sql, connection);
-        command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.UniqueIdentifier) { Value = userId });
-        command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
-
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        while (await reader.ReadAsync(cancellationToken))
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
         {
-            results.Add(new MonthlyTrendPointResponse
-            {
-                Month = reader.GetString(reader.GetOrdinal("Month")),
-                TotalAmount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
-                TransactionCount = reader.GetInt32(reader.GetOrdinal("TransactionCount"))
-            });
-        }
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
 
-        return results;
+            await using var command = new SqlCommand(sql, connection);
+                command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.UniqueIdentifier) { Value = userId });
+                command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
+
+                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    results.Add(new MonthlyTrendPointResponse
+                    {
+                        Month = reader.GetString(reader.GetOrdinal("Month")),
+                        TotalAmount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
+                        TransactionCount = reader.GetInt32(reader.GetOrdinal("TransactionCount"))
+                    });
+                }
+
+                return results;
+        }, cancellationToken);    
     }
 
     public async Task<IReadOnlyList<TopMerchantResponse>> GetTopSpendMerchantsAsync(
@@ -238,27 +252,31 @@ public class AnalyticsRepository : IAnalyticsRepository
 
         var results = new List<TopMerchantResponse>();
 
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
-
-        await using var command = new SqlCommand(sql, connection);
-        command.Parameters.Add(new SqlParameter("@Top", SqlDbType.Int) { Value = top });
-        command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.UniqueIdentifier) { Value = userId });
-        command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
-
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        while (await reader.ReadAsync(cancellationToken))
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
         {
-            results.Add(new TopMerchantResponse
-            {
-                MerchantName = reader.GetString(reader.GetOrdinal("MerchantName")),
-                TotalAmount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
-                TransactionCount = reader.GetInt32(reader.GetOrdinal("TransactionCount"))
-            });
-        }
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
 
-        return results;
+
+                await using var command = new SqlCommand(sql, connection);
+                command.Parameters.Add(new SqlParameter("@Top", SqlDbType.Int) { Value = top });
+                command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.UniqueIdentifier) { Value = userId });
+                command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
+
+                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    results.Add(new TopMerchantResponse
+                    {
+                        MerchantName = reader.GetString(reader.GetOrdinal("MerchantName")),
+                        TotalAmount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
+                        TransactionCount = reader.GetInt32(reader.GetOrdinal("TransactionCount"))
+                    });
+                }
+
+                return results;
+        }, cancellationToken);
     }
 
     public async Task<IReadOnlyList<MonthlySpendDto>> GetMonthlySpendAsync(
@@ -287,26 +305,30 @@ public class AnalyticsRepository : IAnalyticsRepository
 
         var results = new List<MonthlySpendDto>();
 
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
-
-        await using var command = new SqlCommand(sql, connection);
-        command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
-        command.Parameters.Add(new SqlParameter("@MonthsBack", SqlDbType.Int) { Value = monthsBack });
-
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        while (await reader.ReadAsync(cancellationToken))
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
         {
-            results.Add(new MonthlySpendDto
-            {
-                MonthStart = reader.GetDateTime(reader.GetOrdinal("MonthStart")),
-                Amount = reader.GetDecimal(reader.GetOrdinal("Amount"))
-            });
-        }
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
 
-        return results;
-    }
+
+                await using var command = new SqlCommand(sql, connection);
+                command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
+                command.Parameters.Add(new SqlParameter("@MonthsBack", SqlDbType.Int) { Value = monthsBack });
+
+                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    results.Add(new MonthlySpendDto
+                    {
+                        MonthStart = reader.GetDateTime(reader.GetOrdinal("MonthStart")),
+                        Amount = reader.GetDecimal(reader.GetOrdinal("Amount"))
+                    });
+                }
+
+                return results;
+            }, cancellationToken);
+        }
 
     public async Task<IReadOnlyList<TopMerchantDto>> GetTopMerchantSpendAsync(
         Guid businessId,
@@ -345,26 +367,29 @@ public class AnalyticsRepository : IAnalyticsRepository
 
         var results = new List<TopMerchantDto>();
 
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
-
-        await using var command = new SqlCommand(sql, connection);
-        command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
-        command.Parameters.Add(new SqlParameter("@MonthsBack", SqlDbType.Int) { Value = monthsBack });
-        command.Parameters.Add(new SqlParameter("@TopN", SqlDbType.Int) { Value = topN });
-
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        while (await reader.ReadAsync(cancellationToken))
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
         {
-            results.Add(new TopMerchantDto
-            {
-                MerchantName = reader.GetString(reader.GetOrdinal("MerchantName")),
-                TotalAmount = reader.GetDecimal(reader.GetOrdinal("Amount"))
-            });
-        }
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
 
-        return results;
+            await using var command = new SqlCommand(sql, connection);
+            command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
+            command.Parameters.Add(new SqlParameter("@MonthsBack", SqlDbType.Int) { Value = monthsBack });
+            command.Parameters.Add(new SqlParameter("@TopN", SqlDbType.Int) { Value = topN });
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                results.Add(new TopMerchantDto
+                {
+                    MerchantName = reader.GetString(reader.GetOrdinal("MerchantName")),
+                    TotalAmount = reader.GetDecimal(reader.GetOrdinal("Amount"))
+                });
+            }
+
+            return results;
+        }, cancellationToken);
     }
 
     public async Task<IReadOnlyList<CategorySpendDto>> GetMonthlyCategorySpendAsync(
@@ -407,26 +432,30 @@ public class AnalyticsRepository : IAnalyticsRepository
 
         var results = new List<CategorySpendDto>();
 
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
-
-        await using var command = new SqlCommand(sql, connection);
-        command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
-        command.Parameters.Add(new SqlParameter("@MonthsBack", SqlDbType.Int) { Value = monthsBack });
-
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        while (await reader.ReadAsync(cancellationToken))
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
         {
-            results.Add(new CategorySpendDto
-            {
-                MonthStart = reader.GetDateTime(reader.GetOrdinal("MonthStart")),
-                Category = reader.GetString(reader.GetOrdinal("Category")),
-                TotalAmount = reader.GetDecimal(reader.GetOrdinal("Amount"))
-            });
-        }
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
 
-        return results;
+
+                await using var command = new SqlCommand(sql, connection);
+                command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
+                command.Parameters.Add(new SqlParameter("@MonthsBack", SqlDbType.Int) { Value = monthsBack });
+
+                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    results.Add(new CategorySpendDto
+                    {
+                        MonthStart = reader.GetDateTime(reader.GetOrdinal("MonthStart")),
+                        Category = reader.GetString(reader.GetOrdinal("Category")),
+                        TotalAmount = reader.GetDecimal(reader.GetOrdinal("Amount"))
+                    });
+                }
+
+                return results;
+        }, cancellationToken);
     }
 
     public async Task<IReadOnlyList<DuplicateChargeDto>> GetPossibleDuplicateChargesAsync(
@@ -468,26 +497,30 @@ public class AnalyticsRepository : IAnalyticsRepository
 
         var results = new List<DuplicateChargeDto>();
 
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
-
-        await using var command = new SqlCommand(sql, connection);
-        command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
-        command.Parameters.Add(new SqlParameter("@MonthsBack", SqlDbType.Int) { Value = monthsBack });
-
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        while (await reader.ReadAsync(cancellationToken))
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
         {
-            results.Add(new DuplicateChargeDto
-            {
-                MerchantName = reader.GetString(reader.GetOrdinal("MerchantName")),
-                TransactionDate = reader.GetDateTime(reader.GetOrdinal("TransactionDate")),
-                Amount = reader.GetDecimal(reader.GetOrdinal("Amount")),
-                DuplicateCount = reader.GetInt32(reader.GetOrdinal("DuplicateCount"))
-            });
-        }
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
 
-        return results;
+            await using var command = new SqlCommand(sql, connection);
+            command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
+            command.Parameters.Add(new SqlParameter("@MonthsBack", SqlDbType.Int) { Value = monthsBack });
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                results.Add(new DuplicateChargeDto
+                {
+                    MerchantName = reader.GetString(reader.GetOrdinal("MerchantName")),
+                    TransactionDate = reader.GetDateTime(reader.GetOrdinal("TransactionDate")),
+                    Amount = reader.GetDecimal(reader.GetOrdinal("Amount")),
+                    DuplicateCount = reader.GetInt32(reader.GetOrdinal("DuplicateCount"))
+                });
+            }
+
+            return results;
+        }, cancellationToken);
     }
 }
+

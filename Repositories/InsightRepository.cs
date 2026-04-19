@@ -59,39 +59,38 @@ public class InsightRepository : IInsightRepository
         Guid businessId,
         CancellationToken cancellationToken = default)
     {
-        await using var connection = new SqlConnection(_connectionString);
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
+        {
+            await using var connection = new SqlConnection(_connectionString);
 
-         var results = await connection.QueryAsync<InsightRecord>(
-            new CommandDefinition(
-                "spInsightsGetByBusinessId",              // stored procedure name
-                new { BusinessId = businessId },             // parameters
-                commandType: CommandType.StoredProcedure,
-                cancellationToken: cancellationToken));
+            var results = await connection.QueryAsync<InsightRecord>(
+                new CommandDefinition(
+                    "spInsightsGetByBusinessId",              // stored procedure name
+                    new { BusinessId = businessId },             // parameters
+                    commandType: CommandType.StoredProcedure,
+                    cancellationToken: cancellationToken));
 
 
-        return results.ToList();
+            return results.ToList();
+        }, cancellationToken);
     }
 
     public async Task<IReadOnlyList<InsightRecord>> GetByLoadIdAsync(
         Guid loadId,
         CancellationToken cancellationToken = default)
     {
-        await using var connection = new SqlConnection(_connectionString);
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
+        {
+            await using var connection = new SqlConnection(_connectionString);
+            var results = await connection.QueryAsync<InsightRecord>(
+                new CommandDefinition(
+                    "spInsightsGetByLoadId",              // stored procedure name
+                    new { LoadId = loadId },             // parameters
+                    commandType: CommandType.StoredProcedure,
+                    cancellationToken: cancellationToken));
 
-        // var sql = """
-        //     spInsightsGetByLoadId
-        //     """;
-
-        // var results = await connection.QueryAsync<InsightRecord>(
-        //     new CommandDefinition(sql, new { LoadId = loadId }, cancellationToken: cancellationToken));
-        var results = await connection.QueryAsync<InsightRecord>(
-            new CommandDefinition(
-                "spInsightsGetByLoadId",              // stored procedure name
-                new { LoadId = loadId },             // parameters
-                commandType: CommandType.StoredProcedure,
-                cancellationToken: cancellationToken));
-
-        return results.ToList();
+            return results.ToList();
+        }, cancellationToken);
     }
 
     private static DataTable BuildInsightTable(IEnumerable<InsightRecord> insights)

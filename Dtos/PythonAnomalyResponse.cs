@@ -72,5 +72,5 @@ public sealed class PythonVisualizationSeriesDto
     [JsonPropertyName("name")]
     public string Name { get; set; } = "";
     [JsonPropertyName("values")]
-    public List<decimal> Values { get; set; } = new();
+    public List<decimal?> Values { get; set; } = new();
 }

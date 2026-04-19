@@ -183,7 +183,9 @@ public class AnalyticsService : IAnalyticsService
                 Type = "VendorConcentration",
                 Title = $"High reliance on {top.MerchantName}",
 
-                Description = $"{top.MerchantName} accounts for {Math.Round(concentrationPct,1)}% of your total spend.",
+                Description = concentrationPct.HasValue
+                    ? $"{top.MerchantName} accounts for {Math.Round(concentrationPct.Value, 1)}% of your total spend."
+                    : $"{top.MerchantName} accounts for an unknown percentage of your total spend.",
 
                 Severity = concentrationPct >= 50m ? "High" : "Medium",
                 EstimatedImpact = top.TotalAmount,
@@ -199,7 +201,7 @@ public class AnalyticsService : IAnalyticsService
                     ["merchant"] = top.MerchantName,
                     ["merchantSpend"] = top.TotalAmount,
                     ["totalSpend"] = total,
-                    ["concentrationPct"] = Math.Round(concentrationPct, 2)
+                    ["concentrationPct"] = concentrationPct.HasValue? Math.Round(concentrationPct.Value, 2): (decimal?)null
                 },
                 VisualizationType = "bar",
                 Visualization = InsightVisualizationFactory.CreateBarChart(
@@ -270,7 +272,7 @@ public class AnalyticsService : IAnalyticsService
                     new InsightVisualizationSeriesDto
                     {
                         Name = "Spend",
-                        Values = categories.Select(x => x.TotalAmount).ToList()
+                        Values = categories.Select(x => (decimal?)x.TotalAmount).ToList()
                     })
             }
         };

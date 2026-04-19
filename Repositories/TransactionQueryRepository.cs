@@ -21,17 +21,20 @@ public sealed class TransactionQueryRepository : ITransactionQueryRepository
         Guid businessId,
         CancellationToken cancellationToken = default)
     {
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
+        {
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
 
-        var results = await connection.QueryAsync<TransactionRecord>(
-            new CommandDefinition(
-                "dbo.spTransactionsGetByLoadId",
-                new { LoadId = loadId, BusinessId = businessId },
-                commandType: CommandType.StoredProcedure,
-                cancellationToken: cancellationToken));
+            var results = await connection.QueryAsync<TransactionRecord>(
+                new CommandDefinition(
+                    "dbo.spTransactionsGetByLoadId",
+                    new { LoadId = loadId, BusinessId = businessId },
+                    commandType: CommandType.StoredProcedure,
+                    cancellationToken: cancellationToken));
 
-        return results.AsList();
+            return results.AsList();
+        }, cancellationToken);
     }
 
     public async Task<IReadOnlyList<TransactionRecord>> GetRecentTransactionsForBusinessAsync(
@@ -40,16 +43,19 @@ public sealed class TransactionQueryRepository : ITransactionQueryRepository
         DateTime toUtc,
         CancellationToken cancellationToken = default)
     {
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
+        {
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
 
-        var results = await connection.QueryAsync<TransactionRecord>(
-            new CommandDefinition(
-                "dbo.spTransactionsGetRecentForBusiness",
-                new { BusinessId = businessId, FromUtc = fromUtc, ToUtc = toUtc },
-                commandType: CommandType.StoredProcedure,
-                cancellationToken: cancellationToken));
+            var results = await connection.QueryAsync<TransactionRecord>(
+                new CommandDefinition(
+                    "dbo.spTransactionsGetRecentForBusiness",
+                    new { BusinessId = businessId, FromUtc = fromUtc, ToUtc = toUtc },
+                    commandType: CommandType.StoredProcedure,
+                    cancellationToken: cancellationToken));
 
-        return results.AsList();
+            return results.AsList();
+        }, cancellationToken);
     }
 }

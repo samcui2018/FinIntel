@@ -32,14 +32,16 @@ public class BusinessAccessRepository : IBusinessAccessRepository
           AND b.IsActive = 1
         ORDER BY ub.IsDefault DESC, b.BusinessName ASC;
         """;
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
+        {
+            await using var connection = new SqlConnection(_connectionString);
+            var result = await connection.QueryAsync<UserBusinessDto>(new CommandDefinition(
+                sql,
+                new { UserId = userId },
+                cancellationToken: cancellationToken));
 
-        await using var connection = new SqlConnection(_connectionString);
-        var result = await connection.QueryAsync<UserBusinessDto>(new CommandDefinition(
-            sql,
-            new { UserId = userId },
-            cancellationToken: cancellationToken));
-
-        return result.ToList();
+            return result.ToList();
+        }, cancellationToken);
     }
 
     public async Task<bool> UserHasAccessToBusinessAsync(
@@ -54,13 +56,26 @@ public class BusinessAccessRepository : IBusinessAccessRepository
           AND BusinessId = @BusinessId;
         """;
 
-        await using var connection = new SqlConnection(_connectionString);
-        var count = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
-            sql,
-            new { UserId = userId, BusinessId = businessId },
-            cancellationToken: cancellationToken));
+        // await using var connection = new SqlConnection(_connectionString);
+        // var count = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+        //     sql,
+        //     new { UserId = userId, BusinessId = businessId },
+        //     cancellationToken: cancellationToken));
 
-        return count > 0;
+        // return count > 0;
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
+        {
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync(ct);
+
+            var count = await connection.ExecuteScalarAsync<int>(
+                new CommandDefinition(
+                    sql,
+                    new { UserId = userId, BusinessId = businessId },
+                    cancellationToken: ct));
+
+            return count > 0;
+        }, cancellationToken);
     }
 
     public async Task SetDefaultBusinessAsync(

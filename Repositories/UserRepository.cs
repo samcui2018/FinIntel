@@ -30,18 +30,20 @@ public class UserRepository : IUserRepository
         FROM dbo.Users
         WHERE Email = @Email;
         """;
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
+        {
+            await using var connection = new SqlConnection(_connectionString);
 
-        await using var connection = new SqlConnection(_connectionString);
+            var user = await connection.QueryFirstOrDefaultAsync<User>(
+                new CommandDefinition(
+                    sql,
+                    new { Email = email },
+                    cancellationToken: cancellationToken
+                )
+            );
 
-        var user = await connection.QueryFirstOrDefaultAsync<User>(
-            new CommandDefinition(
-                sql,
-                new { Email = email },
-                cancellationToken: cancellationToken
-            )
-        );
-
-        return user;
+            return user;
+        }, cancellationToken);
     }
     public async Task<Guid> GetBusinessKeyForUserAsync(
         Guid userId,
@@ -53,18 +55,20 @@ public class UserRepository : IUserRepository
         join dbo.Businesses c on b.BusinessId = c.BusinessId
         WHERE a.UserId = @UserId;
         """;
+        return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
+        {
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
 
-        await using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
+            await using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@UserId", userId);
 
-        await using var cmd = new SqlCommand(sql, connection);
-        cmd.Parameters.AddWithValue("@UserId", userId);
+            var result = await cmd.ExecuteScalarAsync(cancellationToken);
 
-        var result = await cmd.ExecuteScalarAsync(cancellationToken);
+            if (result == null || result == DBNull.Value)
+                throw new InvalidOperationException($"No BusinessKey found for user {userId}.");
 
-        if (result == null || result == DBNull.Value)
-            throw new InvalidOperationException($"No BusinessKey found for user {userId}.");
-
-        return Guid.Parse(result.ToString());
+            return Guid.Parse(result.ToString());
+        }, cancellationToken);
     }
 }

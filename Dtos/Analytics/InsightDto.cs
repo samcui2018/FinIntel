@@ -34,5 +34,5 @@ public sealed class InsightVisualizationDto
 public sealed class InsightVisualizationSeriesDto
 {
     public string Name { get; set; } = string.Empty;
-    public List<decimal> Values { get; set; } = new();
+    public List<decimal?> Values { get; set; } = new();
 }
