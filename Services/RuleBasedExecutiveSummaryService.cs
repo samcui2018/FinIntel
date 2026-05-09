@@ -9,7 +9,7 @@ public sealed class RuleBasedExecutiveSummaryService : IExecutiveSummaryService
     public Task<string> GenerateAsync(
         Guid businessId,
         IReadOnlyList<InsightDto> insights,
-        BenchmarkComparisonDto benchmark,
+        // BenchmarkComparisonDto benchmark,
         SpendForecastDto forecast,
         CancellationToken cancellationToken = default)
     {
@@ -32,19 +32,19 @@ public sealed class RuleBasedExecutiveSummaryService : IExecutiveSummaryService
             sb.Append(". ");
         }
 
-        if (benchmark.MonthlySpendDeltaPct > 15m)
-        {
-            sb.Append($"Monthly spend is currently {benchmark.MonthlySpendDeltaPct:0.#}% above benchmark. ");
-        }
-        else if (benchmark.MonthlySpendDeltaPct < -15m)
-        {
-            sb.Append($"Monthly spend is currently {Math.Abs(benchmark.MonthlySpendDeltaPct):0.#}% below benchmark. ");
-        }
+        // if (benchmark.MonthlySpendDeltaPct > 15m)
+        // {
+        //     sb.Append($"Monthly spend is currently {benchmark.MonthlySpendDeltaPct:0.#}% above benchmark. ");
+        // }
+        // else if (benchmark.MonthlySpendDeltaPct < -15m)
+        // {
+        //     sb.Append($"Monthly spend is currently {Math.Abs(benchmark.MonthlySpendDeltaPct):0.#}% below benchmark. ");
+        // }
 
-        if (benchmark.TopVendorConcentrationDeltaPct > 10m)
-        {
-            sb.Append("Vendor concentration is higher than benchmark, which may increase dependency risk. ");
-        }
+        // if (benchmark.TopVendorConcentrationDeltaPct > 10m)
+        // {
+        //     sb.Append("Vendor concentration is higher than benchmark, which may increase dependency risk. ");
+        // }
 
         if (forecast.HasSufficientHistory)
         {

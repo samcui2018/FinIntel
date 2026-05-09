@@ -18,9 +18,9 @@ public sealed class BenchmarkInsightGenerator : IInsightGenerator
     {
         // Console.WriteLine($"benchmarkGenerator called for businessId: {businessId}");
         var benchmark = await _benchmarkService.CompareAsync(
-            loadId,
             businessId,
-            monthsBack: 6,
+            "avg_transaction_amount", //hardcode for now
+            0m,
             cancellationToken);
 
         var insights = new List<InsightRecord>();

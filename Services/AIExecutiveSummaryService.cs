@@ -20,11 +20,11 @@ public sealed class AiExecutiveSummaryService : IExecutiveSummaryService
     public async Task<string> GenerateAsync(
         Guid businessId,
         IReadOnlyList<InsightDto> insights,
-        BenchmarkComparisonDto benchmark,
+        // BenchmarkComparisonDto benchmark,
         SpendForecastDto forecast,
         CancellationToken cancellationToken = default)
     {
-        var prompt = BuildPrompt(insights, benchmark, forecast);
+        var prompt = BuildPrompt(insights, forecast);
 
         try
         {
@@ -43,14 +43,14 @@ public sealed class AiExecutiveSummaryService : IExecutiveSummaryService
         return await _fallback.GenerateAsync(
             businessId,
             insights,
-            benchmark,
+            // benchmark,
             forecast,
             cancellationToken);
     }
 
     private static string BuildPrompt(
         IReadOnlyList<InsightDto> insights,
-        BenchmarkComparisonDto benchmark,
+        // BenchmarkComparisonDto benchmark,
         SpendForecastDto forecast)
     {
         var sb = new StringBuilder();
@@ -79,12 +79,12 @@ public sealed class AiExecutiveSummaryService : IExecutiveSummaryService
             }
         }
 
-        sb.AppendLine();
-        sb.AppendLine("Benchmark comparison:");
-        sb.AppendLine($"- Segment: {benchmark.Segment}");
-        sb.AppendLine($"- Monthly spend delta: {benchmark.MonthlySpendDeltaPct:0.##}%");
-        sb.AppendLine($"- Transaction size delta: {benchmark.AverageTransactionDeltaPct:0.##}%");
-        sb.AppendLine($"- Top vendor concentration delta: {benchmark.TopVendorConcentrationDeltaPct:0.##}%");
+        // sb.AppendLine();
+        // sb.AppendLine("Benchmark comparison:");
+        // sb.AppendLine($"- Segment: {benchmark.Segment}");
+        // sb.AppendLine($"- Monthly spend delta: {benchmark.MonthlySpendDeltaPct:0.##}%");
+        // sb.AppendLine($"- Transaction size delta: {benchmark.AverageTransactionDeltaPct:0.##}%");
+        // sb.AppendLine($"- Top vendor concentration delta: {benchmark.TopVendorConcentrationDeltaPct:0.##}%");
 
         sb.AppendLine();
         sb.AppendLine("Forecast:");

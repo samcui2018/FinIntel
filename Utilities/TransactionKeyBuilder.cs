@@ -22,11 +22,13 @@ public static class TransactionKeyBuilder
     public static byte[] BuildIngestionDedupeKey(CanonicalTransaction tx)
     {
         string raw;
+        var businessId = tx.BusinessId.ToString("D");
+        //var businessKey = tx.BusinessKey.ToString(CultureInfo.InvariantCulture);
 
         if (!string.IsNullOrWhiteSpace(tx.SourceTransactionId))
         {
             raw = string.Join("|",
-                tx.BusinessKey.ToString(CultureInfo.InvariantCulture),
+                businessId,
                 Normalize(tx.SourceType),
                 Normalize(tx.SourceName),
                 Normalize(tx.StatementId),
@@ -36,7 +38,7 @@ public static class TransactionKeyBuilder
                  !string.IsNullOrWhiteSpace(tx.AuthorizationCode))
         {
             raw = string.Join("|",
-                tx.BusinessKey.ToString(CultureInfo.InvariantCulture),
+                businessId,
                 Normalize(tx.SourceType),
                 Normalize(tx.SourceName),
                 Normalize(tx.StatementId),
@@ -47,7 +49,7 @@ public static class TransactionKeyBuilder
         else
         {
             raw = string.Join("|",
-                tx.BusinessKey.ToString(CultureInfo.InvariantCulture),
+                businessId,
                 Normalize(tx.SourceType),
                 Normalize(tx.SourceName),
                 Normalize(tx.StatementId),
@@ -62,7 +64,7 @@ public static class TransactionKeyBuilder
     public static byte[] BuildPossibleDuplicateChargeKey(CanonicalTransaction tx)
     {
         var raw = string.Join("|",
-            tx.BusinessKey.ToString(CultureInfo.InvariantCulture),
+            tx.BusinessId.ToString("D"),
             Normalize(tx.MerchantAccountId),
             Normalize(tx.CardAccountId),
             Normalize(tx.NormalizedMerchantName),

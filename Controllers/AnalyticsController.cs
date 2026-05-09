@@ -13,16 +13,16 @@ public sealed class AnalyticsController : ControllerBase
 {
     private readonly IBusinessService _businessService;
     private readonly IAnalyticsService _analyticsService;
-    private readonly IInsightService _insightService;
+    private readonly IPythonInsightService _pythonInsightService;
 
     public AnalyticsController(
         IBusinessService businessService,
         IAnalyticsService analyticsService,
-        IInsightService insightService)
+        IPythonInsightService pythonInsightService)
     {
         _businessService = businessService;
         _analyticsService = analyticsService;
-        _insightService = insightService;
+        _pythonInsightService = pythonInsightService;
     }
 
     [HttpGet("summary")]
@@ -101,7 +101,7 @@ public sealed class AnalyticsController : ControllerBase
         return Ok(result);
     }
     [HttpGet("top-insights")]
-    public async Task<ActionResult<TopInsightsResponse>> GetTopInsights(
+    public async Task<ActionResult<TopInsightsResponse>> GetTopPythonInsights(
         Guid businessId,
         [FromQuery] int monthsBack = 6,
         CancellationToken cancellationToken = default)
@@ -112,7 +112,7 @@ public sealed class AnalyticsController : ControllerBase
         if (monthsBack < 2 || monthsBack > 24)
             return BadRequest("monthsBack must be between 2 and 24.");
 
-        var insights = await _insightService.GetInsightsAsync(
+        var insights = await _pythonInsightService.GetPythonInsightsAsync(
             businessId,
             monthsBack,
             cancellationToken);

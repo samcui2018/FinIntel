@@ -67,11 +67,10 @@ public class AnalyticsRepository : IAnalyticsRepository
             return results;
         }, cancellationToken);
     }      
-
     public async Task<AnalyticsSummaryDto> GetSpendSummaryAsync(
-        Guid userId,
-        Guid businessId,
-        CancellationToken cancellationToken = default)
+    Guid userId,
+    Guid businessId,
+    CancellationToken cancellationToken = default)
     {
         if (userId == Guid.Empty)
             throw new ArgumentOutOfRangeException(nameof(userId));
@@ -79,85 +78,136 @@ public class AnalyticsRepository : IAnalyticsRepository
         if (businessId == Guid.Empty)
             throw new ArgumentException("businessId is required.", nameof(businessId));
 
-        const string sql = """
-            SELECT
-                COUNT(*) AS TransactionCount,
-                ISNULL(SUM(CASE WHEN t.CountsAsSpend = 1 THEN t.AbsoluteAmount ELSE 0 END), 0) AS TotalAmount,
-                ISNULL(AVG(CAST(CASE WHEN t.CountsAsSpend = 1 THEN t.AbsoluteAmount END AS decimal(18,2))), 0) AS AverageAmount,
-                ISNULL(SUM(CASE
-                    WHEN t.CountsAsSpend = 1
-                     AND YEAR(t.TransactionDate) = YEAR(GETDATE())
-                     AND MONTH(t.TransactionDate) = MONTH(GETDATE())
-                    THEN t.AbsoluteAmount
-                    ELSE 0
-                END), 0) AS ThisMonthAmount,
-                (
-                    SELECT TOP 1
-                        COALESCE(
-                            NULLIF(LTRIM(RTRIM(t2.NormalizedMerchantName)), ''),
-                            NULLIF(LTRIM(RTRIM(t2.MerchantName)), ''),
-                            'Unknown'
-                        ) AS MerchantName
-                    FROM dbo.Transactions t2
-                    INNER JOIN dbo.Uploads u2
-                        ON u2.LoadId = t2.LoadId
-                    WHERE u2.CreatedByUserId = @UserId
-                      AND u2.BusinessId = @BusinessId
-                      AND t2.CountsAsSpend = 1
-                    GROUP BY COALESCE(
-                        NULLIF(LTRIM(RTRIM(t2.NormalizedMerchantName)), ''),
-                        NULLIF(LTRIM(RTRIM(t2.MerchantName)), ''),
-                        'Unknown'
-                    )
-                    ORDER BY SUM(t2.AbsoluteAmount) DESC
-                ) AS TopMerchant,
-                (
-                    SELECT MAX(u3.CreatedAt)
-                    FROM dbo.Uploads u3
-                    WHERE u3.CreatedByUserId = @UserId
-                      AND u3.BusinessId = @BusinessId
-                ) AS LatestUploadAt
-            FROM dbo.Transactions t
-            INNER JOIN dbo.Uploads u
-                ON u.LoadId = t.LoadId
-            WHERE u.CreatedByUserId = @UserId
-              AND u.BusinessId = @BusinessId;
-            """;
-
-        // await using var connection = new SqlConnection(_connectionString);
-        // await connection.OpenAsync(cancellationToken);
-
         return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
         {
             await using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync(cancellationToken);
+            await connection.OpenAsync(ct);
 
-             await using var command = new SqlCommand(sql, connection);
+            await using var command = new SqlCommand("dbo.spAnalyticsGetSpendSummary", connection);
+            command.CommandType = CommandType.StoredProcedure;
+
             command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.UniqueIdentifier) { Value = userId });
             command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
 
-            await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken);
+            await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, ct);
 
-            if (!await reader.ReadAsync(cancellationToken))
+            if (!await reader.ReadAsync(ct))
             {
                 return new AnalyticsSummaryDto();
             }
 
+            var transactionCountOrdinal = reader.GetOrdinal("TransactionCount");
+            var totalAmountOrdinal = reader.GetOrdinal("TotalAmount");
+            var averageAmountOrdinal = reader.GetOrdinal("AverageAmount");
+            var thisMonthAmountOrdinal = reader.GetOrdinal("ThisMonthAmount");
+            var topMerchantOrdinal = reader.GetOrdinal("TopMerchant");
+            var latestUploadAtOrdinal = reader.GetOrdinal("LatestUploadAt");
+
             return new AnalyticsSummaryDto
             {
-                TransactionCount = reader.GetInt32(reader.GetOrdinal("TransactionCount")),
-                TotalAmount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
-                AverageAmount = reader.GetDecimal(reader.GetOrdinal("AverageAmount")),
-                ThisMonthAmount = reader.GetDecimal(reader.GetOrdinal("ThisMonthAmount")),
-                TopMerchant = reader.IsDBNull(reader.GetOrdinal("TopMerchant"))
+                TransactionCount = reader.GetInt32(transactionCountOrdinal),
+                TotalAmount = reader.GetDecimal(totalAmountOrdinal),
+                AverageAmount = reader.GetDecimal(averageAmountOrdinal),
+                ThisMonthAmount = reader.GetDecimal(thisMonthAmountOrdinal),
+                TopMerchant = reader.IsDBNull(topMerchantOrdinal)
                     ? null
-                    : reader.GetString(reader.GetOrdinal("TopMerchant")),
-                LatestUploadAt = reader.IsDBNull(reader.GetOrdinal("LatestUploadAt"))
+                    : reader.GetString(topMerchantOrdinal),
+                LatestUploadAt = reader.IsDBNull(latestUploadAtOrdinal)
                     ? null
-                    : reader.GetDateTime(reader.GetOrdinal("LatestUploadAt"))
+                    : reader.GetDateTime(latestUploadAtOrdinal)
             };
-        }, cancellationToken);      
+        }, cancellationToken);
     }
+    // public async Task<AnalyticsSummaryDto> GetSpendSummaryAsync(
+    //     Guid userId,
+    //     Guid businessId,
+    //     CancellationToken cancellationToken = default)
+    // {
+    //     if (userId == Guid.Empty)
+    //         throw new ArgumentOutOfRangeException(nameof(userId));
+
+    //     if (businessId == Guid.Empty)
+    //         throw new ArgumentException("businessId is required.", nameof(businessId));
+
+    //     const string sql = """
+    //         SELECT
+    //             COUNT(*) AS TransactionCount,
+    //             ISNULL(SUM(CASE WHEN t.CountsAsSpend = 1 THEN t.AbsoluteAmount ELSE 0 END), 0) AS TotalAmount,
+    //             ISNULL(AVG(CAST(CASE WHEN t.CountsAsSpend = 1 THEN t.AbsoluteAmount END AS decimal(18,2))), 0) AS AverageAmount,
+    //             ISNULL(SUM(CASE
+    //                 WHEN t.CountsAsSpend = 1
+    //                  AND YEAR(t.TransactionDate) = YEAR(GETDATE())
+    //                  AND MONTH(t.TransactionDate) = MONTH(GETDATE())
+    //                 THEN t.AbsoluteAmount
+    //                 ELSE 0
+    //             END), 0) AS ThisMonthAmount,
+    //             (
+    //                 SELECT TOP 1
+    //                     COALESCE(
+    //                         NULLIF(LTRIM(RTRIM(t2.NormalizedMerchantName)), ''),
+    //                         NULLIF(LTRIM(RTRIM(t2.MerchantName)), ''),
+    //                         'Unknown'
+    //                     ) AS MerchantName
+    //                 FROM dbo.Transactions t2
+    //                 INNER JOIN dbo.Uploads u2
+    //                     ON u2.LoadId = t2.LoadId
+    //                 WHERE u2.CreatedByUserId = @UserId
+    //                   AND u2.BusinessId = @BusinessId
+    //                   AND t2.CountsAsSpend = 1
+    //                 GROUP BY COALESCE(
+    //                     NULLIF(LTRIM(RTRIM(t2.NormalizedMerchantName)), ''),
+    //                     NULLIF(LTRIM(RTRIM(t2.MerchantName)), ''),
+    //                     'Unknown'
+    //                 )
+    //                 ORDER BY SUM(t2.AbsoluteAmount) DESC
+    //             ) AS TopMerchant,
+    //             (
+    //                 SELECT MAX(u3.CreatedAt)
+    //                 FROM dbo.Uploads u3
+    //                 WHERE u3.CreatedByUserId = @UserId
+    //                   AND u3.BusinessId = @BusinessId
+    //             ) AS LatestUploadAt
+    //         FROM dbo.Transactions t
+    //         INNER JOIN dbo.Uploads u
+    //             ON u.LoadId = t.LoadId
+    //         WHERE u.CreatedByUserId = @UserId
+    //           AND u.BusinessId = @BusinessId;
+    //         """;
+
+    //     // await using var connection = new SqlConnection(_connectionString);
+    //     // await connection.OpenAsync(cancellationToken);
+
+    //     return await DbRetryHelper.ExecuteWithRetryAsync(async ct =>
+    //     {
+    //         await using var connection = new SqlConnection(_connectionString);
+    //         await connection.OpenAsync(cancellationToken);
+
+    //          await using var command = new SqlCommand(sql, connection);
+    //         command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.UniqueIdentifier) { Value = userId });
+    //         command.Parameters.Add(new SqlParameter("@BusinessId", SqlDbType.UniqueIdentifier) { Value = businessId });
+
+    //         await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken);
+
+    //         if (!await reader.ReadAsync(cancellationToken))
+    //         {
+    //             return new AnalyticsSummaryDto();
+    //         }
+
+    //         return new AnalyticsSummaryDto
+    //         {
+    //             TransactionCount = reader.GetInt32(reader.GetOrdinal("TransactionCount")),
+    //             TotalAmount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
+    //             AverageAmount = reader.GetDecimal(reader.GetOrdinal("AverageAmount")),
+    //             ThisMonthAmount = reader.GetDecimal(reader.GetOrdinal("ThisMonthAmount")),
+    //             TopMerchant = reader.IsDBNull(reader.GetOrdinal("TopMerchant"))
+    //                 ? null
+    //                 : reader.GetString(reader.GetOrdinal("TopMerchant")),
+    //             LatestUploadAt = reader.IsDBNull(reader.GetOrdinal("LatestUploadAt"))
+    //                 ? null
+    //                 : reader.GetDateTime(reader.GetOrdinal("LatestUploadAt"))
+    //         };
+    //     }, cancellationToken);      
+    // }
 
     public async Task<IReadOnlyList<MonthlyTrendPointResponse>> GetMonthlySpendTrendAsync(
         Guid userId,

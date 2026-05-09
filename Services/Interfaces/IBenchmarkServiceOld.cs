@@ -1,13 +1,12 @@
-using FinancialIntelligence.Api.Models;
 using FinancialIntelligence.Api.Dtos.Intelligence;
 
 namespace FinancialIntelligence.Api.Services;
 
-public interface IBenchmarkService
+public interface IBenchmarkServiceOld
 {
-    Task<BenchmarkComparisonDto?> CompareAsync(
+    Task<BenchmarkComparisonDto> CompareAsync(
+        Guid loadId,
         Guid businessId,
-        string metricKey,
-        decimal actualValue,
+        int monthsBack,
         CancellationToken cancellationToken = default);
 }

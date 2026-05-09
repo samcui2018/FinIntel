@@ -98,7 +98,7 @@ builder.Services.AddScoped<IExecutiveSummaryService, RuleBasedExecutiveSummarySe
 builder.Services.AddScoped<IExecutiveSummaryService, AiExecutiveSummaryService>();
 //builder.Services.AddScoped<IInsightAnalyzer, InterchangeOptimizationService>();
 builder.Services.AddScoped<IInsightRanker, InsightRanker>();
-builder.Services.AddScoped<IInsightService, InsightService>();
+builder.Services.AddScoped<IPythonInsightService, PythonInsightService>();
 //builder.Services.AddScoped<IInsightAnalyzer, SpendAnomalyInsightService>();
 builder.Services.AddScoped<IIntelligenceService, IntelligenceService>();
 //builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -135,11 +135,16 @@ builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<ITransactionQueryRepository, TransactionQueryRepository>();
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IBenchmarkRepository, BenchmarkRepository>();
 
 //builder.Services.AddScoped<IAiChatService, AiChatService>();
 builder.Services.AddScoped<IBusinessAuthorizationService, BusinessAuthorizationService>();
 builder.Services.AddScoped<IAiChatService, AiChatService>();
 builder.Services.AddHttpClient<IGenerativeAiClient, OpenAiClient>();
+
+builder.Services.AddScoped<IDemoSessionService, DemoSessionService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IDemoDataSeeder, DemoDataSeeder>();
 
 builder.Services.Configure<PythonInsightsOptions>(
     builder.Configuration.GetSection("PythonInsights"));

@@ -10,19 +10,19 @@ public sealed class IntelligenceService : IIntelligenceService
     private readonly IInsightRepository _insightRepository;
     private readonly IAnalyticsService _analyticsService;
 
-    private readonly IBenchmarkService _benchmarkService;
+    // private readonly IBenchmarkService _benchmarkService;
     private readonly IPredictionService _predictionService;
     private readonly IExecutiveSummaryService _executiveSummaryService;
 
     public IntelligenceService(
         // IInsightRepository insightRepository,
-        IBenchmarkService benchmarkService,
+        // IBenchmarkService benchmarkService,
         IPredictionService predictionService,
         IExecutiveSummaryService executiveSummaryService,
         IAnalyticsService analyticsService)
     {
         // _insightRepository = insightRepository;
-        _benchmarkService = benchmarkService;
+        // _benchmarkService = benchmarkService;
         _predictionService = predictionService;
         _executiveSummaryService = executiveSummaryService;
         _analyticsService = analyticsService;
@@ -34,11 +34,11 @@ public sealed class IntelligenceService : IIntelligenceService
         int monthsBack,
         CancellationToken cancellationToken = default)
     {
-        var benchmarkTask = _benchmarkService.CompareAsync(
-            loadId,
-            businessId,
-            monthsBack,
-            cancellationToken);
+        // var benchmarkTask = _benchmarkService.CompareAsync(
+        //     businessId,
+        //     "avg_transaction_amount", //hardcode for now
+        //     0m,
+        //     cancellationToken);
 
         var forecastTask = _predictionService.ForecastMonthlySpendAsync(
             businessId,
@@ -50,7 +50,9 @@ public sealed class IntelligenceService : IIntelligenceService
             5,
             cancellationToken);
 
-        await Task.WhenAll(benchmarkTask, forecastTask, insightsTask);
+        await Task.WhenAll(forecastTask, insightsTask);
+        //await Task.WhenAll(benchmarkTask, forecastTask);
+
 
         var response = await insightsTask;
 
@@ -59,7 +61,7 @@ public sealed class IntelligenceService : IIntelligenceService
         var executiveSummary = await _executiveSummaryService.GenerateAsync(
             businessId,
             insightDtos,
-            benchmarkTask.Result,
+            // benchmarkTask.Result,
             forecastTask.Result,
             cancellationToken);
 
@@ -68,7 +70,8 @@ public sealed class IntelligenceService : IIntelligenceService
             BusinessId = businessId,
             GeneratedAtUtc = DateTime.UtcNow,
             ExecutiveSummary = executiveSummary,
-            Benchmark = benchmarkTask.Result,
+            // Benchmark = null,
+            // Benchmark = benchmarkTask.Result,
             Forecast = forecastTask.Result,
             Insights = insightDtos
         };

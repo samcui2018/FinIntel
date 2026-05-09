@@ -1,4 +1,5 @@
 using FinancialIntelligence.Api.Dtos.Analytics;
+using FinancialIntelligence.Api.Models;
 
 namespace FinancialIntelligence.Api.Dtos.Intelligence;
 
@@ -9,7 +10,7 @@ public sealed class IntelligenceResponse
 
     public string ExecutiveSummary { get; set; } = string.Empty;
 
-    public BenchmarkComparisonDto Benchmark { get; set; } = new();
+    // public BenchmarkComparisonDto Benchmark { get; set; } = new();
     public SpendForecastDto Forecast { get; set; } = new();
 
     public IReadOnlyList<InsightDto> Insights { get; set; } = Array.Empty<InsightDto>();

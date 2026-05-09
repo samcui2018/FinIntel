@@ -47,6 +47,7 @@ public class AnalyticsService : IAnalyticsService
         Guid userId,
         CancellationToken cancellationToken = default) =>
         _analyticsRepository.GetUploadHistoryAsync(userId, cancellationToken);
+    
     public async Task<TopInsightsResponse> GetTopInsightsAsync(
     Guid businessId,
     int monthsBack,
@@ -57,11 +58,11 @@ public class AnalyticsService : IAnalyticsService
         var monthlyCategoryTask = _analyticsRepository.GetMonthlyCategorySpendAsync(businessId, monthsBack, cancellationToken);
         var duplicateTask = _analyticsRepository.GetPossibleDuplicateChargesAsync(businessId, monthsBack, cancellationToken);
         // var interchangeTask = _interchangeOptimizationService.AnalyzeAsync("SpendAnomaly", businessId, monthsBack, cancellationToken);
-        var pythonAnomalyTask = _pythonInsightGenerator.AnalyzeAsync("SpendAnomaly", businessId, monthsBack, cancellationToken);
-        var pythonForcastTask = _pythonInsightGenerator.AnalyzeAsync("SpendForecast", businessId, monthsBack, cancellationToken);
+        // var pythonAnomalyTask = _pythonInsightGenerator.AnalyzeAsync("SpendAnomaly", businessId, monthsBack, cancellationToken);
+        // var pythonForcastTask = _pythonInsightGenerator.AnalyzeAsync("SpendForecast", businessId, monthsBack, cancellationToken);
 
-        await Task.WhenAll(monthlySpendTask, topMerchantTask, monthlyCategoryTask, duplicateTask, pythonAnomalyTask, pythonForcastTask);
-
+        //await Task.WhenAll(monthlySpendTask, topMerchantTask, monthlyCategoryTask, duplicateTask, pythonAnomalyTask, pythonForcastTask);
+        await Task.WhenAll(monthlySpendTask, topMerchantTask, monthlyCategoryTask, duplicateTask);
         var candidates = new List<InsightDto>();
 
         candidates.AddRange(BuildMonthlyTrendInsights(businessId, monthlySpendTask.Result));
@@ -69,8 +70,8 @@ public class AnalyticsService : IAnalyticsService
         candidates.AddRange(BuildCategorySpikeInsights(businessId, monthlyCategoryTask.Result));
         candidates.AddRange(BuildDuplicateChargeInsights(businessId, duplicateTask.Result)); 
         //candidates.AddRange(interchangeTask.Result);
-        candidates.AddRange(pythonAnomalyTask.Result);
-        candidates.AddRange(pythonForcastTask.Result);
+        // candidates.AddRange(pythonAnomalyTask.Result);
+        // candidates.AddRange(pythonForcastTask.Result);
 
   
         var insightRecords = candidates
